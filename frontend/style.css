@@ -439,6 +439,173 @@ button:hover {
 
 }
 
+/* Paste list table styles */
+.paste-list {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.paste-list h3 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 1.2rem;
+}
+
+.table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+.paste-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.paste-table th {
+    background: #34495e;
+    color: white;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #2c3e50;
+}
+
+.paste-table th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.paste-table th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.paste-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.paste-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.paste-table tr:last-child td {
+    border-bottom: none;
+}
+
+.paste-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.paste-link:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.paste-date {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.delete-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.delete-btn:hover {
+    background: #c0392b;
+}
+
+/* Pagination styles */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pagination button {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.pagination button:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+#pageInfo {
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .paste-table {
+        font-size: 12px;
+    }
+    
+    .paste-table th,
+    .paste-table td {
+        padding: 8px 10px;
+    }
+    
+    .paste-link {
+        font-size: 12px;
+    }
+    
+    .paste-date {
+        font-size: 11px;
+    }
+    
+    .delete-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .pagination button {
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+}
+
 @media (max-width: 480px) {
     .container {
         padding: 5px;
@@ -470,5 +637,18 @@ button:hover {
         font-size: 11px;
     }
     
-
+    .paste-list {
+        margin-top: 20px;
+        padding: 15px;
+    }
+    
+    .paste-table th,
+    .paste-table td {
+        padding: 6px 8px;
+    }
+    
+    .delete-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
 }

@@ -55,6 +55,30 @@
                 </div>
             </div>
 
+            <!-- Paste List Table -->
+            <div class="paste-list" id="pasteList" style="display: none;">
+                <h3>粘贴历史</h3>
+                <div class="table-container">
+                    <table class="paste-table">
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pasteTableBody">
+                            <!-- Paste rows will be inserted here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination">
+                    <button id="prevPage" disabled>上一页</button>
+                    <span id="pageInfo">第 1 页，共 1 页</span>
+                    <button id="nextPage" disabled>下一页</button>
+                </div>
+            </div>
+
             <div class="paste-view" id="pasteView" style="display: none;">
                 <div class="paste-header">
                     <div class="title-with-time">

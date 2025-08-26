@@ -12,6 +12,16 @@ const pasteView = document.getElementById('pasteView');
 const pasteLink = document.getElementById('pasteLink');
 const copyLink = document.getElementById('copyLink');
 const logoutBtn = document.getElementById('logoutBtn');
+const pasteList = document.getElementById('pasteList');
+const pasteTableBody = document.getElementById('pasteTableBody');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const pageInfo = document.getElementById('pageInfo');
+
+// Pagination state
+let currentPage = 1;
+let totalPages = 1;
+const pageSize = 10;
 
 // 展示页面相关元素将在需要时动态获取
 
@@ -42,10 +52,12 @@ authForm.addEventListener('submit', async (e) => {
     const data = await response.json();
     
     if (response.ok) {
-        // Login successful, show paste form
+        // Login successful, show paste form and load paste list
         loginForm.style.display = 'none';
         pasteForm.style.display = 'block';
+        pasteList.style.display = 'block';
         logoutBtn.style.display = 'inline-block';
+        loadPasteList();
     } else {
         alert('Login failed: ' + data.error);
     }
@@ -79,6 +91,9 @@ pasteCreationForm.addEventListener('submit', async (e) => {
         url.pathname = '/' + data.random_id;
         url.search = '';
         pasteLink.value = url.toString();
+        
+        // Reload paste list to show the newly created paste
+        loadPasteList();
     } else {
         if (response.status === 401) {
             alert('You need to login to create a paste');
@@ -137,10 +152,12 @@ async function checkAuthStatus() {
     const data = await response.json();
     
     if (data.authenticated) {
-        // User is authenticated, show paste form
+        // User is authenticated, show paste form and load paste list
         loginForm.style.display = 'none';
         pasteForm.style.display = 'block';
+        pasteList.style.display = 'block';
         logoutBtn.style.display = 'inline-block';
+        loadPasteList();
     } else {
         // User is not authenticated, show login form
         showLogin();
@@ -152,6 +169,7 @@ function showLogin() {
     loginForm.style.display = 'block';
     pasteForm.style.display = 'none';
     pasteResult.style.display = 'none';
+    pasteList.style.display = 'none';
     logoutBtn.style.display = 'none';
 }
 
@@ -359,5 +377,115 @@ async function copyPasteContent() {
     }
 }
 
+// Load paste list with pagination
+async function loadPasteList(page = 1) {
+    try {
+        const response = await fetch(`/api/pastes/paginated?page=${page}&page_size=${pageSize}`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to load paste list');
+            return;
+        }
+        
+        const data = await response.json();
+        currentPage = data.current_page;
+        totalPages = data.total_pages;
+        
+        renderPasteTable(data.pastes);
+        updatePaginationControls();
+    } catch (error) {
+        console.error('Error loading paste list:', error);
+    }
+}
+
+// Render paste table rows
+function renderPasteTable(pastes) {
+    pasteTableBody.innerHTML = '';
+    
+    pastes.forEach(paste => {
+        const row = document.createElement('tr');
+        
+        // Title cell
+        const titleCell = document.createElement('td');
+        const titleLink = document.createElement('a');
+        titleLink.href = `/${paste.random_id}`;
+        titleLink.textContent = paste.title || '无标题';
+        titleLink.className = 'paste-link';
+        titleCell.appendChild(titleLink);
+        
+        // Created at cell
+        const createdCell = document.createElement('td');
+        createdCell.textContent = formatRelativeTime(paste.created_at);
+        createdCell.className = 'paste-date';
+        
+        // Actions cell
+        const actionsCell = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '删除';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.onclick = () => deletePaste(paste.random_id, row);
+        actionsCell.appendChild(deleteBtn);
+        
+        row.appendChild(titleCell);
+        row.appendChild(createdCell);
+        row.appendChild(actionsCell);
+        
+        pasteTableBody.appendChild(row);
+    });
+}
+
+// Update pagination controls
+function updatePaginationControls() {
+    pageInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+    
+    prevPageBtn.disabled = currentPage <= 1;
+    nextPageBtn.disabled = currentPage >= totalPages;
+}
+
+// Delete paste
+async function deletePaste(randomId, row) {
+    if (!confirm('确定要删除这个粘贴吗？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/paste/${randomId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            // Remove row from table
+            row.remove();
+            // Reload the current page to update pagination if needed
+            loadPasteList(currentPage);
+        } else {
+            const data = await response.json();
+            alert('删除失败：' + data.error);
+        }
+    } catch (error) {
+        console.error('Error deleting paste:', error);
+        alert('删除时发生错误');
+    }
+}
+
+// Pagination event listeners
+if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            loadPasteList(currentPage - 1);
+        }
+    });
+}
+
+if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            loadPasteList(currentPage + 1);
+        }
+    });
+}
 
 

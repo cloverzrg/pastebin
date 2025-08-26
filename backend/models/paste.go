@@ -20,7 +20,7 @@ const base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwx
 
 // GenerateRandomID 生成一个5位的base58随机ID
 func GenerateRandomID() (string, error) {
-	result := make([]byte, 5)
+	result := make([]byte, 4)
 
 	for i := range result {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(base58Alphabet))))

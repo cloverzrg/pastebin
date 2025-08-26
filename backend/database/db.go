@@ -123,3 +123,57 @@ func GetAllPastes() ([]models.Paste, error) {
 
 	return pastes, nil
 }
+
+// GetPastesWithPagination retrieves pastes with pagination
+func GetPastesWithPagination(page, pageSize int) ([]models.Paste, int, error) {
+	// Calculate offset
+	offset := (page - 1) * pageSize
+
+	// Get total count
+	var totalCount int
+	countQuery := "SELECT COUNT(*) FROM pastes"
+	err := DB.QueryRow(countQuery).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	query := "SELECT id, random_id, title, content, created_at FROM pastes ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	rows, err := DB.Query(query, pageSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var pastes []models.Paste
+	for rows.Next() {
+		var paste models.Paste
+		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt)
+		if err != nil {
+			return nil, 0, err
+		}
+		pastes = append(pastes, paste)
+	}
+
+	return pastes, totalCount, nil
+}
+
+// DeletePasteByRandomID deletes a paste by its random ID
+func DeletePasteByRandomID(randomID string) error {
+	query := "DELETE FROM pastes WHERE random_id = ?"
+	result, err := DB.Exec(query, randomID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}

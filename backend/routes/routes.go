@@ -29,6 +29,8 @@ func SetupRoutes() *gin.Engine {
 	router.POST("/api/paste", middleware.AuthMiddleware(), controllers.CreatePasteHandler) // Protected
 	router.GET("/api/paste/:id", controllers.GetPasteHandler)
 	router.GET("/api/pastes", controllers.GetAllPastesHandler)
+	router.GET("/api/pastes/paginated", controllers.GetPastesWithPaginationHandler)
+	router.DELETE("/api/paste/:id", middleware.AuthMiddleware(), controllers.DeletePasteHandler) // Protected
 
 	return router
 }
