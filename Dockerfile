@@ -4,5 +4,4 @@ COPY . .
 WORKDIR /app/backend
 RUN go mod download
 RUN go build -ldflags="-s -w" -o pastebin
-WORKDIR /app
 CMD ["/app/backend/pastebin"]
