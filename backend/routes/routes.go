@@ -22,15 +22,15 @@ func SetupRoutes() *gin.Engine {
 
 	// Auth endpoints
 	router.POST("/api/login", controllers.LoginHandler)
-	router.POST("/api/logout", controllers.LogoutHandler)
+	router.POST("/api/logout", middleware.AuthMiddleware(), controllers.LogoutHandler) // Protected
 	router.GET("/api/auth/check", controllers.CheckAuthHandler)
 
 	// API endpoints
-	router.POST("/api/paste", middleware.AuthMiddleware(), controllers.CreatePasteHandler) // Protected
-	router.GET("/api/paste/:id", controllers.GetPasteHandler)
-	router.GET("/api/pastes", controllers.GetAllPastesHandler)
-	router.GET("/api/pastes/paginated", controllers.GetPastesWithPaginationHandler)
-	router.DELETE("/api/paste/:id", middleware.AuthMiddleware(), controllers.DeletePasteHandler) // Protected
+	router.POST("/api/paste", middleware.AuthMiddleware(), controllers.CreatePasteHandler)                       // Protected
+	router.GET("/api/paste/:id", controllers.GetPasteHandler)                                                    // Protected
+	router.GET("/api/pastes", middleware.AuthMiddleware(), controllers.GetAllPastesHandler)                      // Protected
+	router.GET("/api/pastes/paginated", middleware.AuthMiddleware(), controllers.GetPastesWithPaginationHandler) // Protected
+	router.DELETE("/api/paste/:id", middleware.AuthMiddleware(), controllers.DeletePasteHandler)                 // Protected
 
 	return router
 }
