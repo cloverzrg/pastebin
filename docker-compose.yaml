@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/app/data
+      - ./data:/app/backend/data
     environment:
       - TZ=Asia/Shanghai
       - ADMIN_USERNAME=admin
