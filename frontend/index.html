@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Pastebin</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-section" id="authSection" style="text-align: right; margin-bottom: 20px;">
+            <button id="logoutBtn" style="display: none;">Logout</button>
+        </div>
+
+        <main>
+            <!-- Login Form -->
+            <div class="login-form" id="loginForm">
+                <h2>Login Required</h2>
+                <p>You need to login to create a new paste.</p>
+                <form id="authForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Enter username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+
+            <!-- Paste Creation Form -->
+            <div class="paste-form" id="pasteForm" style="display: none;">
+                <h2>Create New Paste</h2>
+                <form id="pasteCreationForm">
+                    <div class="form-group">
+                        <label for="title">Title (Optional)</label>
+                        <input type="text" id="title" placeholder="Enter a title for your paste">
+                    </div>
+                    <div class="form-group">
+                        <label for="content">Content *</label>
+                        <textarea id="content" placeholder="Enter your content here..." required></textarea>
+                    </div>
+                    <button type="submit">Create Paste</button>
+                </form>
+            </div>
+
+            <div class="paste-result" id="pasteResult" style="display: none;">
+                <h2>Your Paste Created Successfully!</h2>
+                <p>Share this link with others:</p>
+                <div class="link-container">
+                    <input type="text" id="pasteLink" readonly>
+                    <button id="copyLink">Copy Link</button>
+                </div>
+            </div>
+
+            <div class="paste-view" id="pasteView" style="display: none;">
+                <div class="paste-header">
+                    <div class="title-with-time">
+                        <h2 id="pasteTitle"></h2>
+                        <span class="paste-time" id="pasteDate"></span>
+                    </div>
+                    <div class="paste-controls">
+                        <button id="copyContent" class="control-btn" title="复制内容">
+                            <span class="copy-icon">
+                                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon m-2">
+                                    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="paste-content-wrapper">
+                    <div class="paste-content" id="pasteContentContainer">
+                        <div class="line-numbers" id="lineNumbers"></div>
+                        <pre id="pasteContent" class="code-content"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
