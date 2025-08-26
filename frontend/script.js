@@ -182,10 +182,14 @@ async function fetchPaste(id) {
             pasteTitleElement.textContent = data.title;
             pasteTitleElement.style.display = 'block';
             pasteHeaderElement.classList.remove('no-title');
+            // 设置浏览器标签页标题
+            document.title = data.title + ' pastebin';
         } else {
             pasteTitleElement.textContent = 'Untitled Paste';
             pasteTitleElement.style.display = 'block';
             pasteHeaderElement.classList.remove('no-title');
+            // 设置浏览器标签页标题
+            document.title = 'Untitled Paste pastebin';
         }
         document.getElementById('pasteDate').textContent = formatRelativeTime(data.created_at);
         
