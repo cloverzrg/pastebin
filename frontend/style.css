@@ -13,7 +13,7 @@ body {
 }
 
 .container {
-    max-width: 95%;
+    max-width: 90%;
     margin: 0 auto;
     padding: 20px;
 }
@@ -126,7 +126,7 @@ button:hover {
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 0;
-    padding: 12px 0;
+    /* padding: 12px 0; */
     border-bottom: 1px solid #e9ecef;
     flex-wrap: wrap;
     gap: 15px;
