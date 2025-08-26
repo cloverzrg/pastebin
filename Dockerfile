@@ -4,8 +4,8 @@ FROM golang:1.24.5-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 安装依赖工具
-RUN apk add --no-cache git ca-certificates tzdata
+# 安装依赖工具，包括 C 编译器用于 CGO
+RUN apk add --no-cache git ca-certificates tzdata gcc musl-dev
 
 # 复制 go mod 文件
 COPY backend/go.mod backend/go.sum ./
