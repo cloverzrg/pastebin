@@ -1,0 +1,38 @@
+# Git 相关文件
+.git
+.gitignore
+
+# Docker 相关文件
+Dockerfile
+docker-compose.yaml
+.dockerignore
+
+# 文档文件
+README.md
+*.md
+
+# 开发工具配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# IDE 相关
+.claude/
