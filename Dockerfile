@@ -4,4 +4,7 @@ COPY . .
 WORKDIR /app/backend
 RUN go mod download
 RUN go build -ldflags="-s -w" -o pastebin
-CMD ["/app/backend/pastebin"]
+ENV ADMIN_USERNAME=admin
+ENV ADMIN_PASSWORD=admin
+EXPOSE 8080
+CMD ["./pastebin"]
