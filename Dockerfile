@@ -17,13 +17,10 @@ RUN go mod download
 COPY backend/ ./
 
 # 构建应用
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=1 go build -o main .
 
 # 使用 alpine 作为最终运行镜像
-FROM alpine:latest
-
-# 安装运行时依赖
-RUN apk --no-cache add ca-certificates tzdata sqlite
+FROM ubuntu:latest
 
 # 设置工作目录
 WORKDIR /app
@@ -34,9 +31,6 @@ COPY --from=builder /app/main /app/backend/main
 # 复制前端文件
 COPY frontend/ ./frontend/
 
-# 创建数据目录并设置权限
-RUN mkdir -p /app/backend/data && chmod 755 /app/backend/data
-
 # 暴露端口
 EXPOSE 8080
 
@@ -45,4 +39,4 @@ ENV PORT=8080
 ENV GIN_MODE=release
 
 # 运行应用
-CMD ["./backend/main"]
+CMD ["/app/backend/main"]
