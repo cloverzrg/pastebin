@@ -76,7 +76,7 @@ pasteCreationForm.addEventListener('submit', async (e) => {
         
         // Set the link with short URL format
         const url = new URL(window.location);
-        url.pathname = '/' + data.id;
+        url.pathname = '/' + data.random_id;
         url.search = '';
         pasteLink.value = url.toString();
     } else {

@@ -12,9 +12,9 @@ import (
 
 // ViewPasteHandler handles the short link routes
 func ViewPasteHandler(c *gin.Context) {
-	id := c.Param("id")
+	randomID := c.Param("id")
 
-	_, err := database.GetPasteByID(id)
+	_, err := database.GetPasteByRandomID(randomID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.File("../frontend/index.html") // Serve the main page if paste not found
@@ -49,9 +49,9 @@ func CreatePasteHandler(c *gin.Context) {
 
 // GetPasteHandler handles paste retrieval API
 func GetPasteHandler(c *gin.Context) {
-	id := c.Param("id")
+	randomID := c.Param("id")
 
-	paste, err := database.GetPasteByID(id)
+	paste, err := database.GetPasteByRandomID(randomID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Paste not found"})
