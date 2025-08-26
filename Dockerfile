@@ -1,8 +1,8 @@
 FROM golang:1.24
 WORKDIR /app
 COPY . .
-RUN go mod download
 WORKDIR /app/backend
+RUN go mod download
 RUN go build -ldflags="-s -w" -o pastebin
-RUN pwd
+WORKDIR /app
 CMD ["/app/pastebin"]
