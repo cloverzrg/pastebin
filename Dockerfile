@@ -29,13 +29,13 @@ RUN apk --no-cache add ca-certificates tzdata sqlite
 WORKDIR /app
 
 # 从构建阶段复制二进制文件
-COPY --from=builder /app/main .
+COPY --from=builder /app/main /app/backend/main
 
 # 复制前端文件
 COPY frontend/ ./frontend/
 
 # 创建数据目录并设置权限
-RUN mkdir -p /app/data && chmod 755 /app/data
+RUN mkdir -p /app/backend/data && chmod 755 /app/backend/data
 
 # 暴露端口
 EXPOSE 8080
@@ -45,4 +45,4 @@ ENV PORT=8080
 ENV GIN_MODE=release
 
 # 运行应用
-CMD ["./main"]
+CMD ["./backend/main"]
