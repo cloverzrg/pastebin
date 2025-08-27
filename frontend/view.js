@@ -7,9 +7,12 @@ const pasteView = document.getElementById('pasteView');
 const errorMessage = document.getElementById('errorMessage');
 const loading = document.getElementById('loading');
 
-// 语法高亮状态
-let isHighlightMode = false;
+// 语法高亮状态 - 默认启用语法高亮
+let isHighlightMode = true;
 let currentPasteContent = '';
+
+// 滚动处理函数
+let handleScrollFn = null;
 
 // Initialize the page
 if (pasteId && pasteId !== '') {
@@ -186,8 +189,9 @@ function renderHighlightedContent(content) {
     
     // 移除滚动同步（语法高亮模式不需要）
     const pasteContentContainer = document.getElementById('pasteContentContainer');
-    if (pasteContentContainer) {
-        pasteContentContainer.removeEventListener('scroll', handleScroll);
+    if (pasteContentContainer && handleScrollFn) {
+        pasteContentContainer.removeEventListener('scroll', handleScrollFn);
+        handleScrollFn = null;
     }
 }
 
@@ -242,50 +246,64 @@ function setupScrollSync() {
     }
     
     // 移除之前的事件监听器（如果存在）
-    pasteContentContainer.removeEventListener('scroll', handleScroll);
+    if (handleScrollFn) {
+        pasteContentContainer.removeEventListener('scroll', handleScrollFn);
+    }
     
-    // 添加滚动事件监听器
-    pasteContentContainer.addEventListener('scroll', handleScroll);
-    
-    function handleScroll() {
+    // 创建新的滚动处理函数
+    handleScrollFn = function() {
         // 同步滚动行号
         const scrollTop = pasteContentContainer.scrollTop;
         lineNumbersElement.style.transform = `translateY(-${scrollTop}px)`;
-    }
+    };
+    
+    // 添加滚动事件监听器
+    pasteContentContainer.addEventListener('scroll', handleScrollFn);
 }
 
 // 初始化展示页面控制功能
 function initPasteViewControls() {
     const copyContent = document.getElementById('copyContent');
-    const highlightToggle = document.getElementById('highlightToggle');
+    const logModeToggle = document.getElementById('logModeToggle');
 
     if (copyContent) {
         copyContent.addEventListener('click', copyPasteContent);
     }
     
-    if (highlightToggle) {
-        highlightToggle.addEventListener('click', toggleHighlight);
+    if (logModeToggle) {
+        logModeToggle.addEventListener('click', toggleLogMode);
+        // 初始化按钮状态
+        updateToggleButtonState();
     }
 }
 
-// 切换语法高亮
-function toggleHighlight() {
+// 切换日志模式
+function toggleLogMode() {
     isHighlightMode = !isHighlightMode;
     
     // 更新按钮状态
-    const highlightToggle = document.getElementById('highlightToggle');
-    if (highlightToggle) {
-        if (isHighlightMode) {
-            highlightToggle.style.background = '#2980b9';
-            highlightToggle.title = '关闭语法高亮';
-        } else {
-            highlightToggle.style.background = '#f8f9fa';
-            highlightToggle.title = '切换语法高亮';
-        }
-    }
+    updateToggleButtonState();
     
     // 重新渲染内容
     renderPasteContent(currentPasteContent);
+}
+
+// 更新切换按钮状态
+function updateToggleButtonState() {
+    const logModeToggle = document.getElementById('logModeToggle');
+    if (logModeToggle) {
+        if (isHighlightMode) {
+            // 当前是语法高亮模式，按钮用于切换到日志模式
+            logModeToggle.style.background = '#f8f9fa';
+            logModeToggle.style.color = '#495057';
+            logModeToggle.title = '切换到日志模式';
+        } else {
+            // 当前是日志模式，按钮用于切换到语法高亮模式
+            logModeToggle.style.background = '#2980b9';
+            logModeToggle.style.color = 'white';
+            logModeToggle.title = '切换到代码高亮模式';
+        }
+    }
 }
 
 // 复制内容
