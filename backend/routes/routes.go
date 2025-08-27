@@ -14,8 +14,6 @@ func SetupRoutes() *gin.Engine {
 	// Serve frontend static files
 	router.Static("/static", "../frontend")
 	router.StaticFile("/", "../frontend/index.html")
-	router.StaticFile("/style.css", "../frontend/style.css")
-	router.StaticFile("/script.js", "../frontend/script.js")
 
 	// Route for short links
 	router.GET("/:id", controllers.ViewPasteHandler)

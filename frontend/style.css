@@ -96,7 +96,7 @@ button:hover {
     background: #2980b9;
 }
 
-.paste-result, .paste-view, .paste-password {
+.paste-result {
     /* margin-top: 10px; */
     padding: 20px;
     background: #f8f9fa;
@@ -120,213 +120,6 @@ button:hover {
     font-size: 0.9rem;
 }
 
-/* 展示页面头部样式 */
-.paste-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0;
-    /* padding: 12px 0; */
-    border-bottom: 1px solid #e9ecef;
-    flex-wrap: wrap;
-    gap: 15px;
-    min-height: 50px;
-}
-
-.paste-header.no-title {
-    justify-content: flex-end;
-}
-
-.title-with-time {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex: 1;
-    flex-wrap: wrap;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-
-#pasteTitle {
-    margin: 0;
-    flex-shrink: 0;
-}
-
-.paste-time {
-    color: #6c757d;
-    font-size: 0.85rem;
-    font-weight: 500;
-    white-space: nowrap;
-    /* background: rgba(108, 117, 125, 0.1); */
-    border: 1px solid rgba(108, 117, 125, 0.2);
-    padding: 4px 10px;
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.paste-controls {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.control-btn {
-    background: #f8f9fa;
-    color: #495057;
-    border: 1px solid #dee2e6;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    height: 36px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.control-btn:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-
-
-/* 搜索容器样式 */
-.search-container {
-    background: #ecf0f1;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.search-container input {
-    flex: 1;
-    min-width: 200px;
-    padding: 8px 12px;
-    border: 1px solid #bdc3c7;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.search-results {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: #7f8c8d;
-}
-
-.search-nav {
-    padding: 4px 8px;
-    font-size: 12px;
-    min-width: 30px;
-    height: 28px;
-}
-
-/* 内容包装器 */
-.paste-content-wrapper {
-    position: relative;
-    border: 1px solid #e1e5e9;
-    border-radius: 8px;
-    overflow: auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.paste-content {
-    background: #fafbfc;
-    display: flex;
-    min-height: 500px;
-    overflow: visible;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-    font-size: 14px;
-    line-height: 21px;
-    position: relative;
-    width: max-content;
-    min-width: 100%;
-}
-
-/* 行号样式 */
-.line-numbers {
-    background: #f8f9fa;
-    color: #6c757d;
-    padding: 15px 12px 15px 15px;
-    text-align: right;
-    user-select: none;
-    border-right: 1px solid #e9ecef;
-    min-width: 55px;
-    width: 55px;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 21px;
-    font-weight: 500;
-    vertical-align: top;
-    overflow: hidden;
-    flex-shrink: 0;
-    position: relative;
-}
-
-.line-numbers .line-number {
-    display: block;
-    padding: 0 4px;
-    white-space: nowrap;
-    height: 21px;
-    line-height: 21px;
-    min-height: 21px;
-}
-
-.line-numbers .line-number:nth-child(odd) {
-    background-color: rgba(52, 152, 219, 0.06);
-}
-
-.line-numbers .line-number:nth-child(even) {
-    background-color: rgba(155, 89, 182, 0.06);
-}
-
-/* 代码内容样式 */
-.code-content {
-    flex: 1;
-    margin: 0;
-    padding: 15px 0 15px 20px;
-    background: transparent;
-    white-space: pre;
-    overflow: visible;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 21px;
-    color: #343a40;
-    min-width: calc(100% - 75px);
-}
-
-.code-content .code-line {
-    display: block;
-    height: 21px;
-    line-height: 21px;
-    min-height: 21px;
-    width: max-content;
-    min-width: 100%;
-    box-sizing: border-box;
-    white-space: pre;
-    padding-right: 20px;
-}
-
-.code-content .code-line:nth-child(odd) {
-    background-color: rgba(52, 152, 219, 0.05);
-}
-
-.code-content .code-line:nth-child(even) {
-    background-color: rgba(155, 89, 182, 0.05);
-}
 
 
 
@@ -336,18 +129,14 @@ button:hover {
 
 
 
-/* 搜索高亮 */
-.search-highlight {
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 2px;
-    padding: 0 2px;
-}
 
-.search-highlight.current {
-    background-color: #ffc107;
-    color: #212529;
-}
+
+
+
+
+
+
+
 
 @media (max-width: 768px) {
     .container {
@@ -366,75 +155,7 @@ button:hover {
         font-size: 2rem;
     }
     
-    /* 移动端展示页面优化 */
-    .paste-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-    }
-    
-    .title-with-time {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        border-bottom: 2px solid #3498db;
-        padding-bottom: 10px;
-        margin-bottom: 20px;
-    }
-    
-    .paste-header h2 {
-        margin-bottom: 0;
-        text-align: center;
-        font-size: 1.5rem;
-    }
-    
-    .paste-time {
-        font-size: 0.8rem;
-        padding: 3px 8px;
-    }
-    
-    .paste-controls {
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-    
-    .control-btn {
-        min-width: 60px;
-        padding: 12px 16px;
-        font-size: 16px;
-        height: 44px;
-    }
-    
-    .search-container {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .search-container input {
-        min-width: unset;
-        width: 100%;
-    }
-    
-    .search-results {
-        justify-content: center;
-    }
-    
-    .search-nav {
-        min-width: 44px;
-        height: 36px;
-        padding: 8px 12px;
-    }
-    
-    .paste-content {
-        font-size: 12px;
-    }
-    
-    .line-numbers {
-        min-width: 40px;
-        padding: 15px 6px 15px 12px;
-        font-size: 12px;
-    }
+
     
 
 }
@@ -615,27 +336,7 @@ button:hover {
         padding: 15px;
     }
     
-    .paste-controls {
-        gap: 8px;
-    }
-    
-    .control-btn {
-        min-width: 50px;
-        padding: 10px 12px;
-        height: 40px;
-        font-size: 14px;
-    }
-    
-    .paste-content {
-        font-size: 11px;
-        line-height: 1.4;
-    }
-    
-    .line-numbers {
-        min-width: 35px;
-        padding: 15px 4px 15px 8px;
-        font-size: 11px;
-    }
+
     
     .paste-list {
         margin-top: 20px;

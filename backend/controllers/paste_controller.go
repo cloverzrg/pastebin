@@ -19,7 +19,7 @@ func ViewPasteHandler(c *gin.Context) {
 	_, err := database.GetPasteByRandomID(randomID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			c.File("../frontend/index.html") // Serve the main page if paste not found
+			c.File("../frontend/view.html") // Serve the main page if paste not found
 			return
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -28,7 +28,7 @@ func ViewPasteHandler(c *gin.Context) {
 	}
 
 	// 直接返回前端页面，让前端通过路径参数获取粘贴ID
-	c.File("../frontend/index.html")
+	c.File("../frontend/view.html")
 }
 
 // CreatePasteHandler handles paste creation API
