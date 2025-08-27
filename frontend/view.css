@@ -354,6 +354,14 @@ button:hover {
     background: #c0392b;
 }
 
+.paste-result, .paste-view {
+    /* margin-top: 10px; */
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #3498db;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .container {
@@ -488,3 +496,5 @@ button:hover {
         padding-right: 8px;
     }
 }
+
+
