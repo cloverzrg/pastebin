@@ -7,6 +7,10 @@ const pasteView = document.getElementById('pasteView');
 const errorMessage = document.getElementById('errorMessage');
 const loading = document.getElementById('loading');
 
+// 语法高亮状态
+let isHighlightMode = false;
+let currentPasteContent = '';
+
 // Initialize the page
 if (pasteId && pasteId !== '') {
     fetchPaste(pasteId);
@@ -61,7 +65,8 @@ function displayPaste(data) {
     }
     document.getElementById('pasteDate').textContent = formatRelativeTime(data.created_at);
     
-    // 处理内容并生成行号
+    // 保存内容并渲染
+    currentPasteContent = data.content;
     renderPasteContent(data.content);
 }
 
@@ -96,15 +101,31 @@ function hideError() {
 
 // 渲染粘贴内容和行号
 function renderPasteContent(content) {
+    if (isHighlightMode) {
+        renderHighlightedContent(content);
+    } else {
+        renderPlainContent(content);
+    }
+}
+
+// 普通模式渲染
+function renderPlainContent(content) {
     const lines = content.split('\n');
     const lineNumbersElement = document.getElementById('lineNumbers');
     const pasteContentElement = document.getElementById('pasteContent');
     const pasteContentContainer = document.getElementById('pasteContentContainer');
+    const pasteContentWrapper = document.querySelector('.paste-content-wrapper');
     
-    if (!lineNumbersElement || !pasteContentElement || !pasteContentContainer) {
-        console.error('Line numbers or paste content element not found');
+    if (!lineNumbersElement || !pasteContentElement || !pasteContentContainer || !pasteContentWrapper) {
+        console.error('Required elements not found');
         return;
     }
+    
+    // 移除高亮模式样式
+    pasteContentWrapper.classList.remove('highlight-mode');
+    
+    // 显示行号
+    lineNumbersElement.style.display = 'block';
     
     // 生成行号
     const lineNumbersHtml = lines.map((_, index) => 
@@ -120,6 +141,54 @@ function renderPasteContent(content) {
     
     // 添加滚动同步
     setupScrollSync();
+}
+
+// 语法高亮模式渲染
+function renderHighlightedContent(content) {
+    const pasteContentElement = document.getElementById('pasteContent');
+    const pasteContentWrapper = document.querySelector('.paste-content-wrapper');
+    const lineNumbersElement = document.getElementById('lineNumbers');
+    
+    if (!pasteContentElement || !pasteContentWrapper || !lineNumbersElement) {
+        console.error('Required elements not found');
+        return;
+    }
+    
+    // 添加高亮模式样式
+    pasteContentWrapper.classList.add('highlight-mode');
+    
+    // 隐藏原有行号
+    lineNumbersElement.style.display = 'none';
+    
+    // 创建代码块并应用语法高亮
+    const codeElement = document.createElement('code');
+    codeElement.textContent = content;
+    pasteContentElement.innerHTML = '';
+    pasteContentElement.appendChild(codeElement);
+    
+    // 自动检测语言并应用高亮
+    hljs.highlightElement(codeElement);
+    
+    // 添加行号
+    setTimeout(() => {
+        if (typeof hljs !== 'undefined' && hljs.lineNumbersBlock) {
+            hljs.lineNumbersBlock(codeElement);
+        } else if (typeof window.hljs !== 'undefined' && window.hljs.lineNumbersBlock) {
+            window.hljs.lineNumbersBlock(codeElement);
+        } else {
+            // 备用方案：尝试全局初始化
+            if (typeof window.hljs !== 'undefined' && window.hljs.initLineNumbersOnLoad) {
+                window.hljs.initLineNumbersOnLoad();
+            }
+            console.warn('highlightjs-line-numbers plugin not found or not properly loaded');
+        }
+    }, 50);
+    
+    // 移除滚动同步（语法高亮模式不需要）
+    const pasteContentContainer = document.getElementById('pasteContentContainer');
+    if (pasteContentContainer) {
+        pasteContentContainer.removeEventListener('scroll', handleScroll);
+    }
 }
 
 // HTML转义函数
@@ -188,10 +257,35 @@ function setupScrollSync() {
 // 初始化展示页面控制功能
 function initPasteViewControls() {
     const copyContent = document.getElementById('copyContent');
+    const highlightToggle = document.getElementById('highlightToggle');
 
     if (copyContent) {
         copyContent.addEventListener('click', copyPasteContent);
     }
+    
+    if (highlightToggle) {
+        highlightToggle.addEventListener('click', toggleHighlight);
+    }
+}
+
+// 切换语法高亮
+function toggleHighlight() {
+    isHighlightMode = !isHighlightMode;
+    
+    // 更新按钮状态
+    const highlightToggle = document.getElementById('highlightToggle');
+    if (highlightToggle) {
+        if (isHighlightMode) {
+            highlightToggle.style.background = '#2980b9';
+            highlightToggle.title = '关闭语法高亮';
+        } else {
+            highlightToggle.style.background = '#f8f9fa';
+            highlightToggle.title = '切换语法高亮';
+        }
+    }
+    
+    // 重新渲染内容
+    renderPasteContent(currentPasteContent);
 }
 
 // 复制内容
@@ -202,9 +296,15 @@ async function copyPasteContent() {
     if (!pasteContentElement || !copyContentElement) return;
     
     try {
-        // 从各个代码行元素中提取文本，并用换行符连接
-        const codeLines = pasteContentElement.querySelectorAll('.code-line');
-        const textContent = Array.from(codeLines).map(line => line.textContent).join('\n');
+        let textContent;
+        if (isHighlightMode) {
+            // 语法高亮模式：直接获取原始内容
+            textContent = currentPasteContent;
+        } else {
+            // 普通模式：从各个代码行元素中提取文本
+            const codeLines = pasteContentElement.querySelectorAll('.code-line');
+            textContent = Array.from(codeLines).map(line => line.textContent).join('\n');
+        }
         await navigator.clipboard.writeText(textContent);
         
         const copyIcon = copyContentElement.querySelector('.copy-icon');
@@ -225,8 +325,13 @@ async function copyPasteContent() {
         }
     } catch (err) {
         // 降级方案
-        const codeLines = pasteContentElement.querySelectorAll('.code-line');
-        const textContent = Array.from(codeLines).map(line => line.textContent).join('\n');
+        let textContent;
+        if (isHighlightMode) {
+            textContent = currentPasteContent;
+        } else {
+            const codeLines = pasteContentElement.querySelectorAll('.code-line');
+            textContent = Array.from(codeLines).map(line => line.textContent).join('\n');
+        }
         const textArea = document.createElement('textarea');
         textArea.value = textContent;
         document.body.appendChild(textArea);
