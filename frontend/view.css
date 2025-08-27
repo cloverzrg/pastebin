@@ -1,3 +1,13 @@
+/* 默认 log-icon 颜色（黑色） */
+.log-icon svg {
+    fill: #495057;
+    transition: fill 0.3s;
+}
+
+/* 日志模式（深色背景）下，log-icon 变为白色 */
+.log-mode .log-icon svg {
+    fill: #fff;
+}
 * {
     margin: 0;
     padding: 0;

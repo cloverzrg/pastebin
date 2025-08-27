@@ -291,17 +291,20 @@ function toggleLogMode() {
 // 更新切换按钮状态
 function updateToggleButtonState() {
     const logModeToggle = document.getElementById('logModeToggle');
+    const body = document.body;
     if (logModeToggle) {
         if (isHighlightMode) {
             // 当前是语法高亮模式，按钮用于切换到日志模式
             logModeToggle.style.background = '#f8f9fa';
             logModeToggle.style.color = '#495057';
             logModeToggle.title = '切换到日志模式';
+            body.classList.remove('log-mode');
         } else {
             // 当前是日志模式，按钮用于切换到语法高亮模式
             logModeToggle.style.background = '#2980b9';
             logModeToggle.style.color = 'white';
             logModeToggle.title = '切换到代码高亮模式';
+            body.classList.add('log-mode');
         }
     }
 }
