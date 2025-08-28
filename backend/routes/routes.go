@@ -15,6 +15,9 @@ func SetupRoutes() *gin.Engine {
 	router.Static("/static", "../frontend")
 	router.StaticFile("/", "../frontend/index.html")
 
+	// Raw paste endpoint (before the general /:id route)
+	router.GET("/raw/:id", controllers.GetRawPasteHandler)
+
 	// Route for short links
 	router.GET("/:id", controllers.ViewPasteHandler)
 

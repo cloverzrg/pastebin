@@ -265,6 +265,7 @@ function setupScrollSync() {
 function initPasteViewControls() {
     const copyContent = document.getElementById('copyContent');
     const logModeToggle = document.getElementById('logModeToggle');
+    const rawButton = document.getElementById('rawButton');
 
     if (copyContent) {
         copyContent.addEventListener('click', copyPasteContent);
@@ -274,6 +275,10 @@ function initPasteViewControls() {
         logModeToggle.addEventListener('click', toggleLogMode);
         // 初始化按钮状态
         updateToggleButtonState();
+    }
+
+    if (rawButton) {
+        rawButton.addEventListener('click', openRawView);
     }
 }
 
@@ -376,5 +381,12 @@ async function copyPasteContent() {
                 copyContentElement.title = '复制内容';
             }, 3000);
         }
+    }
+}
+
+// 打开原始内容视图
+function openRawView() {
+    if (pasteId && pasteId !== '') {
+        window.open(`/raw/${pasteId}`, '_blank');
     }
 }

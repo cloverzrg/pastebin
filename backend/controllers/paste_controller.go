@@ -131,3 +131,25 @@ func DeletePasteHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Paste deleted successfully"})
 }
+
+// GetRawPasteHandler handles raw paste retrieval
+func GetRawPasteHandler(c *gin.Context) {
+	randomID := c.Param("id")
+
+	paste, err := database.GetPasteByRandomID(randomID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.Header("Access-Control-Allow-Origin", "*")
+			c.String(http.StatusNotFound, "Paste not found")
+		} else {
+			c.Header("Access-Control-Allow-Origin", "*")
+			c.String(http.StatusInternalServerError, "Internal server error")
+		}
+		return
+	}
+
+	// Set headers for raw text response
+	c.Header("Content-Type", "text/plain; charset=utf-8")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.String(http.StatusOK, paste.Content)
+}
