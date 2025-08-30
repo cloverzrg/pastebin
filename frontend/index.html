@@ -9,6 +9,7 @@
 <body>
     <div class="container">
         <div class="auth-section" id="authSection" style="text-align: right; margin-bottom: 20px;">
+            <button id="settingsBtn" style="display: none; margin-right: 10px;">设置</button>
             <button id="logoutBtn" style="display: none;">Logout</button>
         </div>
 
@@ -27,6 +28,7 @@
                         <input type="password" id="loginPassword" placeholder="Enter password" required>
                     </div>
                     <button type="submit">Login</button>
+                    <button type="button" id="oauth2LoginBtn" style="display: none; margin-top: 10px; background: #333;">使用 OAuth2 登录</button>
                 </form>
             </div>
 

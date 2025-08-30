@@ -19,8 +19,8 @@ func InitDB() error {
 		return err
 	}
 
-	// Create table if not exists
-	createTableQuery := `
+	// Create pastes table if not exists
+	createPastesTableQuery := `
 	CREATE TABLE IF NOT EXISTS pastes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		random_id TEXT UNIQUE,
@@ -28,10 +28,33 @@ func InitDB() error {
 		content TEXT NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
-	_, err = DB.Exec(createTableQuery)
+	_, err = DB.Exec(createPastesTableQuery)
 	if err != nil {
 		return err
 	}
+
+	// Create configs table if not exists
+	createConfigsTableQuery := `
+	CREATE TABLE IF NOT EXISTS configs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		key TEXT UNIQUE NOT NULL,
+		value TEXT NOT NULL,
+		description TEXT,
+		category TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+	_, err = DB.Exec(createConfigsTableQuery)
+	if err != nil {
+		return err
+	}
+
+	// Insert default configurations if they don't exist
+	err = initDefaultConfigs()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -176,4 +199,109 @@ func DeletePasteByRandomID(randomID string) error {
 	}
 
 	return nil
+}
+
+// initDefaultConfigs inserts default configuration values
+func initDefaultConfigs() error {
+	defaultConfigs := []models.Config{
+		// AI Configuration
+		{Key: "ai_enabled", Value: "false", Description: "Enable AI auto-generation of titles", Category: "ai"},
+		{Key: "ai_base_url", Value: "https://api.openai.com/v1", Description: "AI API base URL", Category: "ai"},
+		{Key: "ai_api_key", Value: "", Description: "AI API key", Category: "ai"},
+		{Key: "ai_model", Value: "gpt-3.5-turbo", Description: "AI model to use", Category: "ai"},
+		{Key: "ai_prompt", Value: "Based on the following code/text content, generate a concise and descriptive title in Chinese (less than 50 characters):\n\n{content}", Description: "AI prompt template for title generation", Category: "ai"},
+		{Key: "ai_max_tokens", Value: "50", Description: "Maximum tokens for AI response", Category: "ai"},
+		{Key: "ai_temperature", Value: "0.7", Description: "AI temperature (creativity level)", Category: "ai"},
+		
+		// OAuth2 Configuration
+		{Key: "oauth2_enabled", Value: "false", Description: "Enable OAuth2 login", Category: "oauth2"},
+		{Key: "oauth2_client_id", Value: "", Description: "OAuth2 Client ID", Category: "oauth2"},
+		{Key: "oauth2_client_secret", Value: "", Description: "OAuth2 Client Secret", Category: "oauth2"},
+		{Key: "oauth2_auth_url", Value: "", Description: "OAuth2 Authorization URL", Category: "oauth2"},
+		{Key: "oauth2_token_url", Value: "", Description: "OAuth2 Token URL", Category: "oauth2"},
+		{Key: "oauth2_user_info_url", Value: "", Description: "OAuth2 User Info URL", Category: "oauth2"},
+		{Key: "oauth2_redirect_url", Value: "http://localhost:8080/api/oauth2/callback", Description: "OAuth2 Redirect URL", Category: "oauth2"},
+		{Key: "oauth2_scopes", Value: "read:user", Description: "OAuth2 Scopes", Category: "oauth2"},
+	}
+
+	for _, config := range defaultConfigs {
+		// Check if config already exists
+		var count int
+		err := DB.QueryRow("SELECT COUNT(*) FROM configs WHERE key = ?", config.Key).Scan(&count)
+		if err != nil {
+			return err
+		}
+
+		if count == 0 {
+			_, err = DB.Exec(
+				"INSERT INTO configs (key, value, description, category) VALUES (?, ?, ?, ?)",
+				config.Key, config.Value, config.Description, config.Category,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetConfigByKey retrieves a configuration by key
+func GetConfigByKey(key string) (*models.Config, error) {
+	var config models.Config
+	query := `SELECT id, key, value, description, category, created_at, updated_at FROM configs WHERE key = ?`
+	row := DB.QueryRow(query, key)
+	err := row.Scan(&config.ID, &config.Key, &config.Value, &config.Description, &config.Category, &config.CreatedAt, &config.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+// GetConfigsByCategory retrieves all configurations by category
+func GetConfigsByCategory(category string) ([]models.Config, error) {
+	rows, err := DB.Query("SELECT id, key, value, description, category, created_at, updated_at FROM configs WHERE category = ? ORDER BY key", category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var configs []models.Config
+	for rows.Next() {
+		var config models.Config
+		err := rows.Scan(&config.ID, &config.Key, &config.Value, &config.Description, &config.Category, &config.CreatedAt, &config.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, config)
+	}
+
+	return configs, nil
+}
+
+// UpdateConfig updates a configuration value
+func UpdateConfig(key, value string) error {
+	_, err := DB.Exec("UPDATE configs SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?", value, key)
+	return err
+}
+
+// GetAllConfigs retrieves all configurations
+func GetAllConfigs() ([]models.Config, error) {
+	rows, err := DB.Query("SELECT id, key, value, description, category, created_at, updated_at FROM configs ORDER BY category, key")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var configs []models.Config
+	for rows.Next() {
+		var config models.Config
+		err := rows.Scan(&config.ID, &config.Key, &config.Value, &config.Description, &config.Category, &config.CreatedAt, &config.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, config)
+	}
+
+	return configs, nil
 }

@@ -8,6 +8,8 @@ const pasteResult = document.getElementById('pasteResult');
 const pasteLink = document.getElementById('pasteLink');
 const copyLink = document.getElementById('copyLink');
 const logoutBtn = document.getElementById('logoutBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const oauth2LoginBtn = document.getElementById('oauth2LoginBtn');
 const pasteList = document.getElementById('pasteList');
 const pasteTableBody = document.getElementById('pasteTableBody');
 const prevPageBtn = document.getElementById('prevPage');
@@ -21,6 +23,7 @@ const pageSize = 10;
 
 // Initialize the application
 checkAuthStatus();
+checkOAuth2Status();
 
 // Handle login form submission
 authForm.addEventListener('submit', async (e) => {
@@ -46,6 +49,7 @@ authForm.addEventListener('submit', async (e) => {
         pasteForm.style.display = 'block';
         pasteList.style.display = 'block';
         logoutBtn.style.display = 'inline-block';
+        settingsBtn.style.display = 'inline-block';
         loadPasteList();
     } else {
         alert('Login failed: ' + data.error);
@@ -107,6 +111,31 @@ logoutBtn.addEventListener('click', async () => {
     }
 });
 
+// Handle settings button
+settingsBtn.addEventListener('click', () => {
+    window.location.href = '/settings';
+});
+
+// Handle OAuth2 login button
+oauth2LoginBtn.addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/oauth2/login', {
+            credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Redirect to OAuth2 provider
+            window.location.href = data.auth_url;
+        } else {
+            alert('OAuth2 login failed: ' + data.error);
+        }
+    } catch (error) {
+        console.error('OAuth2 login error:', error);
+        alert('OAuth2 login error');
+    }
+});
+
 // Copy link to clipboard
 copyLink.addEventListener('click', () => {
     pasteLink.select();
@@ -134,10 +163,30 @@ async function checkAuthStatus() {
         pasteForm.style.display = 'block';
         pasteList.style.display = 'block';
         logoutBtn.style.display = 'inline-block';
+        settingsBtn.style.display = 'inline-block';
         loadPasteList();
     } else {
         // User is not authenticated, show login form
         showLogin();
+    }
+}
+
+// Check OAuth2 status
+async function checkOAuth2Status() {
+    try {
+        const response = await fetch('/api/oauth2/status', {
+            credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (data.oauth2_enabled) {
+            oauth2LoginBtn.style.display = 'inline-block';
+        } else {
+            oauth2LoginBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error checking OAuth2 status:', error);
+        oauth2LoginBtn.style.display = 'none';
     }
 }
 
@@ -148,6 +197,7 @@ function showLogin() {
     pasteResult.style.display = 'none';
     pasteList.style.display = 'none';
     logoutBtn.style.display = 'none';
+    settingsBtn.style.display = 'none';
 }
 
 

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - Modern Pastebin</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/settings.css">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-section" style="text-align: right; margin-bottom: 20px;">
+            <button onclick="window.location.href='/'" style="margin-right: 10px;">返回首页</button>
+            <button id="logoutBtn" style="display: none;">Logout</button>
+        </div>
+
+        <main>
+            <h1>系统设置</h1>
+            
+            <!-- Navigation Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="ai">AI 设置</button>
+                <button class="tab-button" data-tab="oauth2">OAuth2 设置</button>
+            </div>
+
+            <!-- AI Settings Tab -->
+            <div class="tab-content active" id="ai-tab">
+                <div class="settings-section">
+                    <h2>AI 自动生成标题设置</h2>
+                    <p class="description">当用户创建粘贴时未填写标题，系统将使用AI自动生成标题</p>
+                    
+                    <form id="aiSettingsForm">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="aiEnabled" name="enabled">
+                                启用 AI 自动生成标题
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="aiBaseUrl">API Base URL</label>
+                            <input type="url" id="aiBaseUrl" name="base_url" placeholder="https://api.openai.com/v1" required>
+                            <small>支持 OpenAI 兼容的 API 接口</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="aiApiKey">API Key</label>
+                            <input type="password" id="aiApiKey" name="api_key" placeholder="sk-...">
+                            <small>请妥善保管您的 API Key</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="aiModel">模型</label>
+                            <select id="aiModel" name="model">
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="claude-3-haiku">Claude 3 Haiku</option>
+                                <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                                <option value="claude-3-opus">Claude 3 Opus</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="aiPrompt">提示词模板</label>
+                            <textarea id="aiPrompt" name="prompt" rows="4" placeholder="请为以下代码/文本内容生成一个简洁的标题：&#10;&#10;{content}">基于以下代码/文本内容，生成一个简洁且有描述性的中文标题（不超过50字符）：
+
+{content}</textarea>
+                            <small>使用 {content} 作为内容占位符</small>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="aiMaxTokens">最大 Token 数</label>
+                                <input type="number" id="aiMaxTokens" name="max_tokens" min="10" max="200" value="50">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="aiTemperature">创造性 (Temperature)</label>
+                                <input type="number" id="aiTemperature" name="temperature" min="0" max="2" step="0.1" value="0.7">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="testAiBtn" class="btn-secondary">测试连接</button>
+                            <button type="submit" class="btn-primary">保存设置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- OAuth2 Settings Tab -->
+            <div class="tab-content" id="oauth2-tab">
+                <div class="settings-section">
+                    <h2>OAuth2 登录设置</h2>
+                    <p class="description">除了用户名密码登录外，还可支持第三方 OAuth2 认证登录</p>
+                    
+                    <form id="oauth2SettingsForm">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="oauth2Enabled" name="enabled">
+                                启用 OAuth2 登录
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2ClientId">Client ID</label>
+                            <input type="text" id="oauth2ClientId" name="client_id" placeholder="您的应用 Client ID">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2ClientSecret">Client Secret</label>
+                            <input type="password" id="oauth2ClientSecret" name="client_secret" placeholder="您的应用 Client Secret">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2AuthUrl">Authorization URL</label>
+                            <input type="url" id="oauth2AuthUrl" name="auth_url" placeholder="https://github.com/login/oauth/authorize">
+                            <small>OAuth2 授权端点</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2TokenUrl">Token URL</label>
+                            <input type="url" id="oauth2TokenUrl" name="token_url" placeholder="https://github.com/login/oauth/access_token">
+                            <small>OAuth2 令牌端点</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2UserInfoUrl">User Info URL</label>
+                            <input type="url" id="oauth2UserInfoUrl" name="user_info_url" placeholder="https://api.github.com/user">
+                            <small>获取用户信息的 API 端点</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2RedirectUrl">Redirect URL</label>
+                            <input type="url" id="oauth2RedirectUrl" name="redirect_url" placeholder="http://localhost:8080/api/oauth2/callback">
+                            <small>在 OAuth2 应用设置中配置的回调地址</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oauth2Scopes">Scopes</label>
+                            <input type="text" id="oauth2Scopes" name="scopes" placeholder="read:user">
+                            <small>请求的权限范围，多个权限用空格分隔</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="testOauth2Btn" class="btn-secondary">测试配置</button>
+                            <button type="submit" class="btn-primary">保存设置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Success/Error Messages -->
+            <div id="messageArea" class="message-area"></div>
+        </main>
+    </div>
+
+    <script src="/static/settings.js"></script>
+</body>
+</html>

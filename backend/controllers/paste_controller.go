@@ -8,6 +8,7 @@ import (
 
 	"pastebin/database"
 	"pastebin/models"
+	"pastebin/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,6 +38,15 @@ func CreatePasteHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&paste); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// If title is empty, try to generate one using AI
+	if paste.Title == "" {
+		aiService := services.NewAIService()
+		generatedTitle, err := aiService.GenerateTitle(paste.Content)
+		if err == nil && generatedTitle != "" {
+			paste.Title = generatedTitle
+		}
 	}
 
 	// Insert paste into database
