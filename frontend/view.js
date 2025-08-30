@@ -32,7 +32,6 @@ async function fetchPaste(id) {
         
         if (response.ok) {
             displayPaste(data);
-            initPasteViewControls();
         } else {
             showError(data.error || '获取内容失败');
         }
@@ -68,9 +67,141 @@ function displayPaste(data) {
     }
     document.getElementById('pasteDate').textContent = formatRelativeTime(data.created_at);
     
-    // 保存内容并渲染
+    // 保存内容
     currentPasteContent = data.content;
+    
+    // 自动检测是否为日志内容
+    if (isLogContent(data.content)) {
+        isHighlightMode = false; // 自动切换到日志模式
+    }
+    
+    // 渲染内容
     renderPasteContent(data.content);
+    
+    // 初始化控制按钮功能
+    initPasteViewControls();
+    
+    // 确保控制按钮状态正确更新
+    updateToggleButtonState();
+}
+
+// 检测内容是否为日志
+function isLogContent(content) {
+    if (!content || content.trim() === '') {
+        return false;
+    }
+    
+    const lines = content.split('\n');
+    const totalLines = lines.length;
+    
+    // 如果内容太短，不太可能是日志
+    if (totalLines < 3) {
+        return false;
+    }
+    
+    let logIndicators = 0;
+    let timestampLines = 0;
+    let logLevelLines = 0;
+    let ipAddressLines = 0;
+    let urlLines = 0;
+    
+    // 检查前50行（或全部行，如果总行数小于50）
+    const linesToCheck = Math.min(50, totalLines);
+    
+    for (let i = 0; i < linesToCheck; i++) {
+        const line = lines[i].trim();
+        if (line === '') continue;
+        
+        // 检测时间戳格式
+        const timestampPatterns = [
+            /^\d{4}-\d{2}-\d{2}[\s\T]\d{2}:\d{2}:\d{2}/, // 2024-01-01 12:00:00 或 2024-01-01T12:00:00
+            /^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}/, // 01/01/2024 12:00:00
+            /^\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}/, // 01-01-2024 12:00:00
+            /^\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}/, // Jan 1 12:00:00
+            /^\[\d{4}-\d{2}-\d{2}[\s\T]\d{2}:\d{2}:\d{2}/, // [2024-01-01 12:00:00]
+            /^\d{2}:\d{2}:\d{2}/ // 12:00:00
+        ];
+        
+        // 检测日志级别
+        const logLevelPatterns = [
+            /\b(DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE|CRITICAL)\b/i,
+            /\b(debug|info|warn|warning|error|fatal|trace|critical)\b/,
+            /\[(DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE|CRITICAL)\]/i,
+            /\[(debug|info|warn|warning|error|fatal|trace|critical)\]/
+        ];
+        
+        // 检测IP地址
+        const ipPattern = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
+        
+        // 检测URL/路径
+        const urlPatterns = [
+            /https?:\/\/[^\s]+/,
+            /\/[a-zA-Z0-9\/_\-\.]+/,
+            /"[A-Z]+\s+\/[^\s]*\s+HTTP/i // HTTP请求格式
+        ];
+        
+        // 检查时间戳
+        if (timestampPatterns.some(pattern => pattern.test(line))) {
+            timestampLines++;
+            logIndicators++;
+        }
+        
+        // 检查日志级别
+        if (logLevelPatterns.some(pattern => pattern.test(line))) {
+            logLevelLines++;
+            logIndicators++;
+        }
+        
+        // 检查IP地址
+        if (ipPattern.test(line)) {
+            ipAddressLines++;
+            logIndicators++;
+        }
+        
+        // 检查URL/路径
+        if (urlPatterns.some(pattern => pattern.test(line))) {
+            urlLines++;
+            logIndicators++;
+        }
+        
+        // 检查常见的日志关键词
+        const logKeywords = [
+            /\bexception\b/i,
+            /\bstack\s*trace\b/i,
+            /\berror\s*code\b/i,
+            /\bresponse\s*time\b/i,
+            /\brequest\s*id\b/i,
+            /\buser\s*agent\b/i,
+            /\breferer\b/i,
+            /\bstatus\s*code\b/i,
+            /\b(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+/,
+            /\b\d{3}\s+\d+/, // HTTP状态码和响应大小
+            /\bms\b|\bmilliseconds\b/i, // 响应时间
+        ];
+        
+        if (logKeywords.some(pattern => pattern.test(line))) {
+            logIndicators++;
+        }
+    }
+    
+    // 计算各种特征的比例
+    const timestampRatio = timestampLines / linesToCheck;
+    const logLevelRatio = logLevelLines / linesToCheck;
+    const ipRatio = ipAddressLines / linesToCheck;
+    const urlRatio = urlLines / linesToCheck;
+    const totalIndicatorRatio = logIndicators / linesToCheck;
+    
+    // 判断逻辑：
+    // 1. 如果超过30%的行包含时间戳，很可能是日志
+    // 2. 如果超过20%的行包含日志级别，很可能是日志
+    // 3. 如果超过15%的行包含IP地址，可能是访问日志
+    // 4. 如果超过20%的行包含URL，可能是访问日志
+    // 5. 总体指标超过40%，很可能是日志
+    
+    return timestampRatio > 0.3 || 
+           logLevelRatio > 0.2 || 
+           (ipRatio > 0.15 && urlRatio > 0.2) ||
+           totalIndicatorRatio > 0.4;
 }
 
 // Show loading state
