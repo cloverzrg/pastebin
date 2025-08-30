@@ -51,6 +51,7 @@ function displayPaste(data) {
     
     // 处理标题显示 - 如果没有标题则隐藏标题元素
     const pasteTitleElement = document.getElementById('pasteTitle');
+    const aiTagElement = document.getElementById('aiTag');
     const pasteHeaderElement = document.querySelector('.paste-header');
     if (data.title && data.title.trim() !== '') {
         pasteTitleElement.textContent = data.title;
@@ -58,12 +59,21 @@ function displayPaste(data) {
         pasteHeaderElement.classList.remove('no-title');
         // 设置浏览器标签页标题
         document.title = data.title + ' - Modern Pastebin';
+        
+        // 显示AI标签（如果标题是AI生成的）
+        if (data.ai_title_generated) {
+            aiTagElement.style.display = 'inline-flex';
+        } else {
+            aiTagElement.style.display = 'none';
+        }
     } else {
         pasteTitleElement.textContent = 'Untitled Paste';
         pasteTitleElement.style.display = 'block';
         pasteHeaderElement.classList.remove('no-title');
         // 设置浏览器标签页标题
         document.title = 'Untitled Paste - Modern Pastebin';
+        // 隐藏AI标签
+        aiTagElement.style.display = 'none';
     }
     document.getElementById('pasteDate').textContent = formatRelativeTime(data.created_at);
     
