@@ -45,6 +45,10 @@ func SetupRoutes() *gin.Engine {
 	router.GET("/api/config/oauth2", middleware.AuthMiddleware(), controllers.GetOAuth2ConfigHandler)               // Protected
 	router.PUT("/api/config/oauth2", middleware.AuthMiddleware(), controllers.UpdateOAuth2ConfigHandler)            // Protected
 
+	// Test endpoints
+	router.POST("/api/test/ai", middleware.AuthMiddleware(), controllers.TestAIHandler)                             // Protected
+	router.GET("/api/models", middleware.AuthMiddleware(), controllers.GetModelsHandler)                           // Protected
+
 	// API endpoints
 	router.POST("/api/paste", middleware.AuthMiddleware(), controllers.CreatePasteHandler)                       // Protected
 	router.GET("/api/paste/:id", controllers.GetPasteHandler)                                                    // Protected

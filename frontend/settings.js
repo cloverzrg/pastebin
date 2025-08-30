@@ -69,6 +69,9 @@ function bindEvents() {
     document.getElementById('testAiBtn').addEventListener('click', testAIConnection);
     document.getElementById('testOauth2Btn').addEventListener('click', testOAuth2Config);
     
+    // 获取模型按钮
+    document.getElementById('fetchModelsBtn').addEventListener('click', fetchAIModels);
+    
     // 登出按钮
     logoutBtn.addEventListener('click', logout);
 }
@@ -221,10 +224,30 @@ async function testAIConnection() {
     testBtn.disabled = true;
     
     try {
-        // 这里可以调用一个测试API端点
-        showMessage('AI连接测试功能将在后续版本中实现', 'info');
+        // 使用AI服务生成测试标题
+        const testContent = "console.log('Hello World');";
+        const response = await fetch('/api/test/ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ content: testContent })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            if (result.title) {
+                showMessage(`AI连接成功！生成的测试标题：${result.title}`, 'success');
+            } else {
+                showMessage('AI连接成功，但未返回标题（可能AI功能未启用或API Key为空）', 'info');
+            }
+        } else {
+            showMessage('AI连接失败: ' + result.error, 'error');
+        }
     } catch (error) {
-        showMessage('测试连接失败', 'error');
+        showMessage('测试AI连接时发生错误: ' + error.message, 'error');
     } finally {
         testBtn.textContent = originalText;
         testBtn.disabled = false;
@@ -289,5 +312,57 @@ async function logout() {
         }
     } catch (error) {
         console.error('Logout error:', error);
+    }
+}
+
+// 获取AI模型列表
+async function fetchAIModels() {
+    const fetchBtn = document.getElementById('fetchModelsBtn');
+    const originalText = fetchBtn.textContent;
+    
+    fetchBtn.textContent = '获取中...';
+    fetchBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/models', {
+            credentials: 'include'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.models) {
+            // 更新模型列表
+            updateModelList(result.models);
+            showMessage(`成功获取 ${result.count} 个可用模型`, 'success');
+        } else {
+            showMessage('获取模型列表失败: ' + (result.error || '未知错误'), 'error');
+        }
+    } catch (error) {
+        showMessage('获取模型列表时发生错误: ' + error.message, 'error');
+    } finally {
+        fetchBtn.textContent = originalText;
+        fetchBtn.disabled = false;
+    }
+}
+
+// 更新模型列表选项
+function updateModelList(models) {
+    const modelInput = document.getElementById('aiModel');
+    const modelList = document.getElementById('modelList');
+    
+    // 清空现有选项
+    modelList.innerHTML = '';
+    
+    // 添加新的模型选项
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = model.id;
+        modelList.appendChild(option);
+    });
+    
+    // 如果当前没有选择模型且有可用模型，选择第一个
+    if (!modelInput.value && models.length > 0) {
+        modelInput.value = models[0].id;
     }
 }

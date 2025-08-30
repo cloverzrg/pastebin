@@ -8,11 +8,13 @@ import (
 
 // Paste represents a paste entry
 type Paste struct {
-	ID        int       `json:"id"`
-	RandomID  string    `json:"random_id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              int       `json:"id"`
+	RandomID        string    `json:"random_id"`
+	Title           string    `json:"title"`
+	Content         string    `json:"content"`
+	CreatedAt       time.Time `json:"created_at"`
+	AITitleGenerated bool     `json:"ai_title_generated"` // 是否已经AI生成过标题
+	AIRetryCount     int      `json:"ai_retry_count"`     // AI生成重试次数
 }
 
 // Base58 字符集（去掉了容易混淆的字符：0, O, I, l）

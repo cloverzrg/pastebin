@@ -1,7 +1,15 @@
 package services
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"pastebin/database"
 )
@@ -14,8 +22,104 @@ func NewAIService() *AIService {
 	return &AIService{}
 }
 
+// ChatRequest represents the request to OpenAI API
+type ChatRequest struct {
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	MaxTokens   int       `json:"max_tokens"`
+	Temperature float64   `json:"temperature"`
+}
+
+// Message represents a chat message
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// ChatResponse represents the response from OpenAI API
+type ChatResponse struct {
+	Choices []Choice `json:"choices"`
+}
+
+// Choice represents a choice in the response
+type Choice struct {
+	Message Message `json:"message"`
+}
+
+// Model represents an AI model
+type Model struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+}
+
+// ModelsResponse represents the response from models API
+type ModelsResponse struct {
+	Object string  `json:"object"`
+	Data   []Model `json:"data"`
+}
+
+// GetModels retrieves available models from the AI API
+func (s *AIService) GetModels() ([]Model, error) {
+	// Get AI configuration
+	baseURLConfig, err := database.GetConfigByKey("ai_base_url")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get base URL config: %v", err)
+	}
+
+	apiKeyConfig, err := database.GetConfigByKey("ai_api_key")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get API key config: %v", err)
+	}
+
+	if baseURLConfig.Value == "" || apiKeyConfig.Value == "" {
+		return nil, fmt.Errorf("AI configuration not complete")
+	}
+
+	// Prepare request URL
+	baseURL := strings.TrimRight(baseURLConfig.Value, "/")
+	url := baseURL + "/models"
+
+	// Create request
+	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKeyConfig.Value)
+
+	// Send request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	var modelsResp ModelsResponse
+	err = json.Unmarshal(body, &modelsResp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	return modelsResp.Data, nil
+}
+
 // GenerateTitle generates a title for the given content using AI
-// Note: This is a placeholder implementation. OpenAI integration will be completed in a future update.
 func (s *AIService) GenerateTitle(content string) (string, error) {
 	// Get AI configuration
 	enabledConfig, err := database.GetConfigByKey("ai_enabled")
@@ -23,9 +127,45 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 		return "", nil // AI is disabled, return empty title
 	}
 
+	baseURLConfig, err := database.GetConfigByKey("ai_base_url")
+	if err != nil {
+		return "", err
+	}
+
 	apiKeyConfig, err := database.GetConfigByKey("ai_api_key")
 	if err != nil {
 		return "", err
+	}
+
+	modelConfig, err := database.GetConfigByKey("ai_model")
+	if err != nil {
+		return "", err
+	}
+
+	promptConfig, err := database.GetConfigByKey("ai_prompt")
+	if err != nil {
+		return "", err
+	}
+
+	maxTokensConfig, err := database.GetConfigByKey("ai_max_tokens")
+	if err != nil {
+		return "", err
+	}
+
+	temperatureConfig, err := database.GetConfigByKey("ai_temperature")
+	if err != nil {
+		return "", err
+	}
+
+	// Parse configuration values
+	maxTokens, err := strconv.Atoi(maxTokensConfig.Value)
+	if err != nil {
+		maxTokens = 50 // default value
+	}
+
+	temperature, err := strconv.ParseFloat(temperatureConfig.Value, 64)
+	if err != nil {
+		temperature = 0.7 // default value
 	}
 
 	// Skip if API key is empty
@@ -33,7 +173,94 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 		return "", nil
 	}
 
-	// TODO: Implement OpenAI v2 integration
-	// For now, return a placeholder message
-	return fmt.Sprintf("AI Generated Title (Placeholder)"), nil
+	// Prepare prompt with content
+	prompt := strings.ReplaceAll(promptConfig.Value, "{content}", content)
+
+	// Truncate content if too long (limit to 1000 characters to avoid token limits)
+	if len(content) > 1000 {
+		truncatedContent := content[:1000] + "..."
+		prompt = strings.ReplaceAll(promptConfig.Value, "{content}", truncatedContent)
+	}
+
+	// Prepare request
+	chatReq := ChatRequest{
+		Model: modelConfig.Value,
+		Messages: []Message{
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+		MaxTokens:   maxTokens,
+		Temperature: temperature,
+	}
+
+	reqBody, err := json.Marshal(chatReq)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %v", err)
+	}
+
+	// Determine API endpoint
+	apiURL := baseURLConfig.Value
+	if apiURL == "" {
+		apiURL = "https://api.openai.com/v1"
+	}
+	if !strings.HasSuffix(apiURL, "/") {
+		apiURL += "/"
+	}
+	apiURL += "chat/completions"
+
+	// Create HTTP request
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKeyConfig.Value)
+
+	// Send request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %v", err)
+	}
+
+	var chatResp ChatResponse
+	err = json.Unmarshal(body, &chatResp)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	// Extract title from response
+	if len(chatResp.Choices) > 0 && chatResp.Choices[0].Message.Content != "" {
+		title := strings.TrimSpace(chatResp.Choices[0].Message.Content)
+		
+		// Remove quotes if present
+		title = strings.Trim(title, "\"'")
+		
+		// Limit title length
+		if len(title) > 100 {
+			title = title[:100]
+		}
+		
+		return title, nil
+	}
+
+	return "", fmt.Errorf("no response from AI")
 }

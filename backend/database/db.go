@@ -26,12 +26,25 @@ func InitDB() error {
 		random_id TEXT UNIQUE,
 		title TEXT,
 		content TEXT NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		ai_title_generated BOOLEAN DEFAULT FALSE,
+		ai_retry_count INTEGER DEFAULT 0
 	);`
 	_, err = DB.Exec(createPastesTableQuery)
 	if err != nil {
 		return err
 	}
+
+	// Add new columns if they don't exist (for existing databases)
+	addAIColumnsQuery := `
+	ALTER TABLE pastes ADD COLUMN ai_title_generated BOOLEAN DEFAULT FALSE;
+	`
+	DB.Exec(addAIColumnsQuery) // Ignore error if column already exists
+	
+	addRetryCountQuery := `
+	ALTER TABLE pastes ADD COLUMN ai_retry_count INTEGER DEFAULT 0;
+	`
+	DB.Exec(addRetryCountQuery) // Ignore error if column already exists
 
 	// Create configs table if not exists
 	createConfigsTableQuery := `
@@ -89,8 +102,8 @@ func CreatePaste(paste *models.Paste) error {
 		// 如果ID已存在，重新生成
 	}
 
-	insertQuery := `INSERT INTO pastes (random_id, title, content) VALUES (?, ?, ?)`
-	result, err := DB.Exec(insertQuery, paste.RandomID, paste.Title, paste.Content)
+	insertQuery := `INSERT INTO pastes (random_id, title, content, ai_title_generated, ai_retry_count) VALUES (?, ?, ?, ?, ?)`
+	result, err := DB.Exec(insertQuery, paste.RandomID, paste.Title, paste.Content, paste.AITitleGenerated, paste.AIRetryCount)
 	if err != nil {
 		return err
 	}
@@ -105,9 +118,9 @@ func CreatePaste(paste *models.Paste) error {
 // GetPasteByID retrieves a paste by its ID (保留用于内部使用)
 func GetPasteByID(id string) (*models.Paste, error) {
 	var paste models.Paste
-	query := `SELECT id, random_id, title, content, created_at FROM pastes WHERE id = ?`
+	query := `SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes WHERE id = ?`
 	row := DB.QueryRow(query, id)
-	err := row.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt)
+	err := row.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
 	if err != nil {
 		return nil, err
 	}
@@ -117,9 +130,9 @@ func GetPasteByID(id string) (*models.Paste, error) {
 // GetPasteByRandomID retrieves a paste by its random ID
 func GetPasteByRandomID(randomID string) (*models.Paste, error) {
 	var paste models.Paste
-	query := `SELECT id, random_id, title, content, created_at FROM pastes WHERE random_id = ?`
+	query := `SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes WHERE random_id = ?`
 	row := DB.QueryRow(query, randomID)
-	err := row.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt)
+	err := row.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +141,7 @@ func GetPasteByRandomID(randomID string) (*models.Paste, error) {
 
 // GetAllPastes retrieves all pastes (limited to 100)
 func GetAllPastes() ([]models.Paste, error) {
-	rows, err := DB.Query("SELECT id, random_id, title, content, created_at FROM pastes ORDER BY created_at DESC LIMIT 100")
+	rows, err := DB.Query("SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes ORDER BY created_at DESC LIMIT 100")
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +150,7 @@ func GetAllPastes() ([]models.Paste, error) {
 	var pastes []models.Paste
 	for rows.Next() {
 		var paste models.Paste
-		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt)
+		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +174,7 @@ func GetPastesWithPagination(page, pageSize int) ([]models.Paste, int, error) {
 	}
 
 	// Get paginated results
-	query := "SELECT id, random_id, title, content, created_at FROM pastes ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	query := "SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	rows, err := DB.Query(query, pageSize, offset)
 	if err != nil {
 		return nil, 0, err
@@ -171,7 +184,7 @@ func GetPastesWithPagination(page, pageSize int) ([]models.Paste, int, error) {
 	var pastes []models.Paste
 	for rows.Next() {
 		var paste models.Paste
-		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt)
+		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
 		if err != nil {
 			return nil, 0, err
 		}
