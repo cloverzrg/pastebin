@@ -4,13 +4,13 @@ import "time"
 
 // Config represents a configuration setting
 type Config struct {
-	ID          int       `json:"id"`
-	Key         string    `json:"key"`
-	Value       string    `json:"value"`
+	ID          int       `json:"id" gorm:"primaryKey;autoIncrement"`
+	Key         string    `json:"key" gorm:"uniqueIndex;not null"`
+	Value       string    `json:"value" gorm:"not null"`
 	Description string    `json:"description"`
-	Category    string    `json:"category"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Category    string    `json:"category" gorm:"not null"`
+	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 // AIConfig represents AI settings

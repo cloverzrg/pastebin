@@ -1,63 +1,24 @@
 package database
 
 import (
-	"database/sql"
-	"time"
-
 	"pastebin/models"
 
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 // InitDB initializes the database connection and creates tables
 func InitDB() error {
 	var err error
-	DB, err = sql.Open("sqlite3", "./data/pastebin.db")
+	DB, err = gorm.Open(sqlite.Open("./data/pastebin.db"), &gorm.Config{})
 	if err != nil {
 		return err
 	}
 
-	// Create pastes table if not exists
-	createPastesTableQuery := `
-	CREATE TABLE IF NOT EXISTS pastes (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		random_id TEXT UNIQUE,
-		title TEXT,
-		content TEXT NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		ai_title_generated BOOLEAN DEFAULT FALSE,
-		ai_retry_count INTEGER DEFAULT 0
-	);`
-	_, err = DB.Exec(createPastesTableQuery)
-	if err != nil {
-		return err
-	}
-
-	// Add new columns if they don't exist (for existing databases)
-	addAIColumnsQuery := `
-	ALTER TABLE pastes ADD COLUMN ai_title_generated BOOLEAN DEFAULT FALSE;
-	`
-	DB.Exec(addAIColumnsQuery) // Ignore error if column already exists
-
-	addRetryCountQuery := `
-	ALTER TABLE pastes ADD COLUMN ai_retry_count INTEGER DEFAULT 0;
-	`
-	DB.Exec(addRetryCountQuery) // Ignore error if column already exists
-
-	// Create configs table if not exists
-	createConfigsTableQuery := `
-	CREATE TABLE IF NOT EXISTS configs (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		key TEXT UNIQUE NOT NULL,
-		value TEXT NOT NULL,
-		description TEXT,
-		category TEXT NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
-	_, err = DB.Exec(createConfigsTableQuery)
+	// Auto migrate the schema
+	err = DB.AutoMigrate(&models.Paste{}, &models.Config{})
 	if err != nil {
 		return err
 	}
@@ -74,7 +35,10 @@ func InitDB() error {
 // CloseDB closes the database connection
 func CloseDB() {
 	if DB != nil {
-		DB.Close()
+		sqlDB, err := DB.DB()
+		if err == nil {
+			sqlDB.Close()
+		}
 	}
 }
 
@@ -88,9 +52,8 @@ func CreatePaste(paste *models.Paste) error {
 		}
 
 		// 检查ID是否已存在
-		var count int
-		checkQuery := `SELECT COUNT(*) FROM pastes WHERE random_id = ?`
-		err = DB.QueryRow(checkQuery, randomID).Scan(&count)
+		var count int64
+		err = DB.Model(&models.Paste{}).Where("random_id = ?", randomID).Count(&count).Error
 		if err != nil {
 			return err
 		}
@@ -102,25 +65,15 @@ func CreatePaste(paste *models.Paste) error {
 		// 如果ID已存在，重新生成
 	}
 
-	insertQuery := `INSERT INTO pastes (random_id, title, content, ai_title_generated, ai_retry_count) VALUES (?, ?, ?, ?, ?)`
-	result, err := DB.Exec(insertQuery, paste.RandomID, paste.Title, paste.Content, paste.AITitleGenerated, paste.AIRetryCount)
-	if err != nil {
-		return err
-	}
-
-	id, _ := result.LastInsertId()
-	paste.ID = int(id)
-	paste.CreatedAt = time.Now()
-
-	return nil
+	// 使用GORM创建记录
+	result := DB.Create(paste)
+	return result.Error
 }
 
 // GetPasteByID retrieves a paste by its ID (保留用于内部使用)
 func GetPasteByID(id string) (*models.Paste, error) {
 	var paste models.Paste
-	query := `SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes WHERE id = ?`
-	row := DB.QueryRow(query, id)
-	err := row.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
+	err := DB.Where("id = ?", id).First(&paste).Error
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +83,7 @@ func GetPasteByID(id string) (*models.Paste, error) {
 // GetPasteByRandomID retrieves a paste by its random ID
 func GetPasteByRandomID(randomID string) (*models.Paste, error) {
 	var paste models.Paste
-	query := `SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes WHERE random_id = ?`
-	row := DB.QueryRow(query, randomID)
-	err := row.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
+	err := DB.Where("random_id = ?", randomID).First(&paste).Error
 	if err != nil {
 		return nil, err
 	}
@@ -141,22 +92,11 @@ func GetPasteByRandomID(randomID string) (*models.Paste, error) {
 
 // GetAllPastes retrieves all pastes (limited to 100)
 func GetAllPastes() ([]models.Paste, error) {
-	rows, err := DB.Query("SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes ORDER BY created_at DESC LIMIT 100")
+	var pastes []models.Paste
+	err := DB.Order("created_at DESC").Limit(100).Find(&pastes).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var pastes []models.Paste
-	for rows.Next() {
-		var paste models.Paste
-		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
-		if err != nil {
-			return nil, err
-		}
-		pastes = append(pastes, paste)
-	}
-
 	return pastes, nil
 }
 
@@ -166,49 +106,31 @@ func GetPastesWithPagination(page, pageSize int) ([]models.Paste, int, error) {
 	offset := (page - 1) * pageSize
 
 	// Get total count
-	var totalCount int
-	countQuery := "SELECT COUNT(*) FROM pastes"
-	err := DB.QueryRow(countQuery).Scan(&totalCount)
+	var totalCount int64
+	err := DB.Model(&models.Paste{}).Count(&totalCount).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Get paginated results
-	query := "SELECT id, random_id, title, content, created_at, ai_title_generated, ai_retry_count FROM pastes ORDER BY created_at DESC LIMIT ? OFFSET ?"
-	rows, err := DB.Query(query, pageSize, offset)
+	var pastes []models.Paste
+	err = DB.Order("created_at DESC").Limit(pageSize).Offset(offset).Find(&pastes).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var pastes []models.Paste
-	for rows.Next() {
-		var paste models.Paste
-		err := rows.Scan(&paste.ID, &paste.RandomID, &paste.Title, &paste.Content, &paste.CreatedAt, &paste.AITitleGenerated, &paste.AIRetryCount)
-		if err != nil {
-			return nil, 0, err
-		}
-		pastes = append(pastes, paste)
-	}
-
-	return pastes, totalCount, nil
+	return pastes, int(totalCount), nil
 }
 
 // DeletePasteByRandomID deletes a paste by its random ID
 func DeletePasteByRandomID(randomID string) error {
-	query := "DELETE FROM pastes WHERE random_id = ?"
-	result, err := DB.Exec(query, randomID)
-	if err != nil {
-		return err
+	result := DB.Where("random_id = ?", randomID).Delete(&models.Paste{})
+	if result.Error != nil {
+		return result.Error
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return sql.ErrNoRows
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
 
 	return nil
@@ -240,17 +162,14 @@ func initDefaultConfigs() error {
 
 	for _, config := range defaultConfigs {
 		// Check if config already exists
-		var count int
-		err := DB.QueryRow("SELECT COUNT(*) FROM configs WHERE key = ?", config.Key).Scan(&count)
+		var count int64
+		err := DB.Model(&models.Config{}).Where("key = ?", config.Key).Count(&count).Error
 		if err != nil {
 			return err
 		}
 
 		if count == 0 {
-			_, err = DB.Exec(
-				"INSERT INTO configs (key, value, description, category) VALUES (?, ?, ?, ?)",
-				config.Key, config.Value, config.Description, config.Category,
-			)
+			err = DB.Create(&config).Error
 			if err != nil {
 				return err
 			}
@@ -263,9 +182,7 @@ func initDefaultConfigs() error {
 // GetConfigByKey retrieves a configuration by key
 func GetConfigByKey(key string) (*models.Config, error) {
 	var config models.Config
-	query := `SELECT id, key, value, description, category, created_at, updated_at FROM configs WHERE key = ?`
-	row := DB.QueryRow(query, key)
-	err := row.Scan(&config.ID, &config.Key, &config.Value, &config.Description, &config.Category, &config.CreatedAt, &config.UpdatedAt)
+	err := DB.Where("key = ?", key).First(&config).Error
 	if err != nil {
 		return nil, err
 	}
@@ -274,41 +191,24 @@ func GetConfigByKey(key string) (*models.Config, error) {
 
 // GetConfigsByCategory retrieves all configurations by category
 func GetConfigsByCategory(category string) ([]models.Config, error) {
-	rows, err := DB.Query("SELECT id, key, value, description, category, created_at, updated_at FROM configs WHERE category = ? ORDER BY key", category)
+	var configs []models.Config
+	err := DB.Where("category = ?", category).Order("key").Find(&configs).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var configs []models.Config
-	for rows.Next() {
-		var config models.Config
-		err := rows.Scan(&config.ID, &config.Key, &config.Value, &config.Description, &config.Category, &config.CreatedAt, &config.UpdatedAt)
-		if err != nil {
-			return nil, err
-		}
-		configs = append(configs, config)
-	}
-
 	return configs, nil
 }
 
 // UpdateConfig updates or inserts a configuration value (upsert)
 func UpdateConfig(key, value string) error {
 	// Try to update first
-	result, err := DB.Exec("UPDATE configs SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?", value, key)
-	if err != nil {
-		return err
-	}
-
-	// Check if any row was affected
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
+	result := DB.Model(&models.Config{}).Where("key = ?", key).Update("value", value)
+	if result.Error != nil {
+		return result.Error
 	}
 
 	// If no rows were affected, insert new record
-	if rowsAffected == 0 {
+	if result.RowsAffected == 0 {
 		category := "general"
 		description := ""
 
@@ -359,7 +259,13 @@ func UpdateConfig(key, value string) error {
 			}
 		}
 
-		_, err = DB.Exec("INSERT INTO configs (key, value, description, category, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", key, value, description, category)
+		config := models.Config{
+			Key:         key,
+			Value:       value,
+			Description: description,
+			Category:    category,
+		}
+		err := DB.Create(&config).Error
 		return err
 	}
 
@@ -368,21 +274,10 @@ func UpdateConfig(key, value string) error {
 
 // GetAllConfigs retrieves all configurations
 func GetAllConfigs() ([]models.Config, error) {
-	rows, err := DB.Query("SELECT id, key, value, description, category, created_at, updated_at FROM configs ORDER BY category, key")
+	var configs []models.Config
+	err := DB.Order("category, key").Find(&configs).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var configs []models.Config
-	for rows.Next() {
-		var config models.Config
-		err := rows.Scan(&config.ID, &config.Key, &config.Value, &config.Description, &config.Category, &config.CreatedAt, &config.UpdatedAt)
-		if err != nil {
-			return nil, err
-		}
-		configs = append(configs, config)
-	}
-
 	return configs, nil
 }
