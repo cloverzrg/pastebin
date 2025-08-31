@@ -446,7 +446,7 @@ function updateToggleButtonState() {
             body.classList.remove('log-mode');
         } else {
             // 当前是日志模式，按钮用于切换到语法高亮模式
-            logModeToggle.style.background = '#2980b9';
+            logModeToggle.style.background = '#156296c2';
             logModeToggle.style.color = 'white';
             logModeToggle.title = '切换到代码高亮模式';
             body.classList.add('log-mode');
