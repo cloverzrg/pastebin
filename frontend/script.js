@@ -181,6 +181,9 @@ async function checkOAuth2Status() {
         
         if (data.oauth2_enabled) {
             oauth2LoginBtn.style.display = 'inline-block';
+            // 使用动态名称更新按钮文本
+            const providerName = data.oauth2_name || 'OAuth2';
+            oauth2LoginBtn.textContent = `使用 ${providerName} 登录`;
         } else {
             oauth2LoginBtn.style.display = 'none';
         }

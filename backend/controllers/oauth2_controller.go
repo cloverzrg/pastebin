@@ -117,8 +117,12 @@ func OAuth2CallbackHandler(c *gin.Context) {
 func CheckOAuth2StatusHandler(c *gin.Context) {
 	oauth2Service := services.NewOAuth2Service()
 	enabled := oauth2Service.IsEnabled()
+	name := oauth2Service.GetName()
 	
-	c.JSON(http.StatusOK, gin.H{"oauth2_enabled": enabled})
+	c.JSON(http.StatusOK, gin.H{
+		"oauth2_enabled": enabled,
+		"oauth2_name":    name,
+	})
 }
 
 // generateRandomState generates a random state string for CSRF protection

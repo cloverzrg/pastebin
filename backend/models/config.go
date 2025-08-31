@@ -27,6 +27,7 @@ type AIConfig struct {
 // OAuth2Config represents OAuth2 settings
 type OAuth2Config struct {
 	Enabled      bool   `json:"enabled"`
+	Name         string `json:"name"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	AuthURL      string `json:"auth_url"`

@@ -98,6 +98,7 @@ func UpdateOAuth2ConfigHandler(c *gin.Context) {
 	// Update each OAuth2 configuration setting
 	configs := map[string]string{
 		"oauth2_enabled":       boolToString(oauth2Config.Enabled),
+		"oauth2_name":          oauth2Config.Name,
 		"oauth2_client_id":     oauth2Config.ClientID,
 		"oauth2_client_secret": oauth2Config.ClientSecret,
 		"oauth2_auth_url":      oauth2Config.AuthURL,
@@ -160,6 +161,7 @@ func GetOAuth2ConfigHandler(c *gin.Context) {
 	}
 
 	oauth2Config.Enabled = stringToBool(configMap["oauth2_enabled"])
+	oauth2Config.Name = configMap["oauth2_name"]
 	oauth2Config.ClientID = configMap["oauth2_client_id"]
 	oauth2Config.ClientSecret = configMap["oauth2_client_secret"]
 	oauth2Config.AuthURL = configMap["oauth2_auth_url"]

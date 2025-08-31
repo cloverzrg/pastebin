@@ -130,6 +130,7 @@ async function loadOAuth2Config() {
             const config = await response.json();
             
             document.getElementById('oauth2Enabled').checked = config.enabled;
+            document.getElementById('oauth2Name').value = config.name || '';
             document.getElementById('oauth2ClientId').value = config.client_id || '';
             document.getElementById('oauth2ClientSecret').value = config.client_secret || '';
             document.getElementById('oauth2AuthUrl').value = config.auth_url || '';
@@ -183,6 +184,7 @@ async function saveAIConfig() {
 async function saveOAuth2Config() {
     const config = {
         enabled: document.getElementById('oauth2Enabled').checked,
+        name: document.getElementById('oauth2Name').value.trim(),
         client_id: document.getElementById('oauth2ClientId').value.trim(),
         client_secret: document.getElementById('oauth2ClientSecret').value.trim(),
         auth_url: document.getElementById('oauth2AuthUrl').value.trim(),

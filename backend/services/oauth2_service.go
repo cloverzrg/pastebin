@@ -151,3 +151,12 @@ func (s *OAuth2Service) IsEnabled() bool {
 	}
 	return enabledConfig.Value == "true"
 }
+
+// GetName retrieves the OAuth2 provider name
+func (s *OAuth2Service) GetName() string {
+	nameConfig, err := database.GetConfigByKey("oauth2_name")
+	if err != nil || nameConfig.Value == "" {
+		return "OAuth2"
+	}
+	return nameConfig.Value
+}

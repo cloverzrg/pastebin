@@ -40,7 +40,7 @@ func InitDB() error {
 	ALTER TABLE pastes ADD COLUMN ai_title_generated BOOLEAN DEFAULT FALSE;
 	`
 	DB.Exec(addAIColumnsQuery) // Ignore error if column already exists
-	
+
 	addRetryCountQuery := `
 	ALTER TABLE pastes ADD COLUMN ai_retry_count INTEGER DEFAULT 0;
 	`
@@ -53,7 +53,7 @@ func InitDB() error {
 		key TEXT UNIQUE NOT NULL,
 		value TEXT NOT NULL,
 		description TEXT,
-		category TEXT,
+		category TEXT NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
@@ -225,7 +225,7 @@ func initDefaultConfigs() error {
 		{Key: "ai_prompt", Value: "Based on the following code/text content, generate a concise and descriptive title in Chinese (less than 50 characters):\n\n{content}", Description: "AI prompt template for title generation", Category: "ai"},
 		{Key: "ai_max_tokens", Value: "50", Description: "Maximum tokens for AI response", Category: "ai"},
 		{Key: "ai_temperature", Value: "0.7", Description: "AI temperature (creativity level)", Category: "ai"},
-		
+
 		// OAuth2 Configuration
 		{Key: "oauth2_enabled", Value: "false", Description: "Enable OAuth2 login", Category: "oauth2"},
 		{Key: "oauth2_client_id", Value: "", Description: "OAuth2 Client ID", Category: "oauth2"},
@@ -235,6 +235,7 @@ func initDefaultConfigs() error {
 		{Key: "oauth2_user_info_url", Value: "", Description: "OAuth2 User Info URL", Category: "oauth2"},
 		{Key: "oauth2_redirect_url", Value: "http://localhost:8080/api/oauth2/callback", Description: "OAuth2 Redirect URL", Category: "oauth2"},
 		{Key: "oauth2_scopes", Value: "read:user", Description: "OAuth2 Scopes", Category: "oauth2"},
+		{Key: "oauth2_name", Value: "", Description: "OAuth2 Name", Category: "oauth2"},
 	}
 
 	for _, config := range defaultConfigs {
@@ -292,10 +293,77 @@ func GetConfigsByCategory(category string) ([]models.Config, error) {
 	return configs, nil
 }
 
-// UpdateConfig updates a configuration value
+// UpdateConfig updates or inserts a configuration value (upsert)
 func UpdateConfig(key, value string) error {
-	_, err := DB.Exec("UPDATE configs SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?", value, key)
-	return err
+	// Try to update first
+	result, err := DB.Exec("UPDATE configs SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?", value, key)
+	if err != nil {
+		return err
+	}
+
+	// Check if any row was affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, insert new record
+	if rowsAffected == 0 {
+		category := "general"
+		description := ""
+
+		// Determine category and description based on key
+		if len(key) >= 3 && key[:3] == "ai_" {
+			category = "ai"
+			switch key {
+			case "ai_enabled":
+				description = "Enable AI auto-title generation"
+			case "ai_base_url":
+				description = "AI API base URL"
+			case "ai_api_key":
+				description = "AI API key"
+			case "ai_model":
+				description = "AI model name"
+			case "ai_prompt":
+				description = "AI prompt template"
+			case "ai_max_tokens":
+				description = "Maximum tokens for AI response"
+			case "ai_temperature":
+				description = "AI creativity temperature"
+			default:
+				description = "AI configuration"
+			}
+		} else if len(key) >= 7 && key[:7] == "oauth2_" {
+			category = "oauth2"
+			switch key {
+			case "oauth2_enabled":
+				description = "Enable OAuth2 login"
+			case "oauth2_name":
+				description = "OAuth2 provider name"
+			case "oauth2_client_id":
+				description = "OAuth2 client ID"
+			case "oauth2_client_secret":
+				description = "OAuth2 client secret"
+			case "oauth2_auth_url":
+				description = "OAuth2 authorization URL"
+			case "oauth2_token_url":
+				description = "OAuth2 token URL"
+			case "oauth2_user_info_url":
+				description = "OAuth2 user info URL"
+			case "oauth2_redirect_url":
+				description = "OAuth2 redirect URL"
+			case "oauth2_scopes":
+				description = "OAuth2 scopes"
+			default:
+				description = "OAuth2 configuration"
+			}
+		}
+
+		_, err = DB.Exec("INSERT INTO configs (key, value, description, category, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", key, value, description, category)
+		return err
+	}
+
+	return nil
 }
 
 // GetAllConfigs retrieves all configurations
