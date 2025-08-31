@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +11,9 @@ import (
 	"time"
 
 	"pastebin/database"
+
+	"github.com/openai/openai-go/v2"
+	"github.com/openai/openai-go/v2/option"
 )
 
 // AIService handles AI-related operations
@@ -20,30 +22,6 @@ type AIService struct{}
 // NewAIService creates a new AI service instance
 func NewAIService() *AIService {
 	return &AIService{}
-}
-
-// ChatRequest represents the request to OpenAI API
-type ChatRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	MaxTokens   int       `json:"max_tokens"`
-	Temperature float64   `json:"temperature"`
-}
-
-// Message represents a chat message
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// ChatResponse represents the response from OpenAI API
-type ChatResponse struct {
-	Choices []Choice `json:"choices"`
-}
-
-// Choice represents a choice in the response
-type Choice struct {
-	Message Message `json:"message"`
 }
 
 // Model represents an AI model
@@ -182,83 +160,49 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 		prompt = strings.ReplaceAll(promptConfig.Value, "{content}", truncatedContent)
 	}
 
-	// Prepare request
-	chatReq := ChatRequest{
-		Model: modelConfig.Value,
-		Messages: []Message{
-			{
-				Role:    "user",
-				Content: prompt,
-			},
-		},
-		MaxTokens:   maxTokens,
-		Temperature: temperature,
+	// Create OpenAI client with custom base URL if provided
+	var client openai.Client
+	if baseURLConfig.Value != "" && baseURLConfig.Value != "https://api.openai.com/v1" {
+		client = openai.NewClient(
+			option.WithAPIKey(apiKeyConfig.Value),
+			option.WithBaseURL(strings.TrimRight(baseURLConfig.Value, "/")),
+		)
+	} else {
+		client = openai.NewClient(
+			option.WithAPIKey(apiKeyConfig.Value),
+		)
 	}
 
-	reqBody, err := json.Marshal(chatReq)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %v", err)
-	}
-
-	// Determine API endpoint
-	apiURL := baseURLConfig.Value
-	if apiURL == "" {
-		apiURL = "https://api.openai.com/v1"
-	}
-	if !strings.HasSuffix(apiURL, "/") {
-		apiURL += "/"
-	}
-	apiURL += "chat/completions"
-
-	// Create HTTP request
+	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(reqBody))
+	// Make the API call
+	chatCompletion, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(prompt),
+		},
+		Model:       openai.ChatModel(modelConfig.Value),
+		MaxTokens:   openai.Int(int64(maxTokens)),
+		Temperature: openai.Float(temperature),
+		ReasoningEffort: openai.ReasoningEffortMinimal,
+	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %v", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKeyConfig.Value)
-
-	// Send request
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
-	}
-
-	// Parse response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %v", err)
-	}
-
-	var chatResp ChatResponse
-	err = json.Unmarshal(body, &chatResp)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %v", err)
+		return "", fmt.Errorf("failed to call OpenAI API: %v", err)
 	}
 
 	// Extract title from response
-	if len(chatResp.Choices) > 0 && chatResp.Choices[0].Message.Content != "" {
-		title := strings.TrimSpace(chatResp.Choices[0].Message.Content)
-		
+	if len(chatCompletion.Choices) > 0 && chatCompletion.Choices[0].Message.Content != "" {
+		title := strings.TrimSpace(chatCompletion.Choices[0].Message.Content)
+
 		// Remove quotes if present
 		title = strings.Trim(title, "\"'")
-		
+
 		// Limit title length
 		if len(title) > 100 {
 			title = title[:100]
 		}
-		
+
 		return title, nil
 	}
 
