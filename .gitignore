@@ -1,3 +1,4 @@
 backend/pastebin
 backend/data/pastebin.db
 backend/__debug_bin*
+frontend/node_modules/

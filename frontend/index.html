@@ -1,90 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Pastebin</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        glass: {
+                            light: 'rgba(255, 255, 255, 0.1)',
+                            medium: 'rgba(255, 255, 255, 0.2)',
+                            dark: 'rgba(0, 0, 0, 0.1)',
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="auth-section" id="authSection" style="text-align: right; margin-bottom: 20px;">
-            <button id="settingsBtn" style="display: none; margin-right: 10px;">设置</button>
-            <button id="logoutBtn" style="display: none;">Logout</button>
-        </div>
-
-        <main>
-            <!-- Login Form -->
-            <div class="login-form" id="loginForm">
-                <h2>Login Required</h2>
-                <p>You need to login to create a new paste.</p>
-                <form id="authForm">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" placeholder="Enter username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" placeholder="Enter password" required>
-                    </div>
-                    <button type="submit">Login</button>
-                    <button type="button" id="oauth2LoginBtn" style="display: none; margin-top: 10px; background: #333;">使用 OAuth2 登录</button>
-                </form>
-            </div>
-
-            <!-- Paste Creation Form -->
-            <div class="paste-form" id="pasteForm" style="display: none;">
-                <h2>Create New Paste</h2>
-                <form id="pasteCreationForm">
-                    <div class="form-group">
-                        <label for="title">Title (Optional)</label>
-                        <input type="text" id="title" placeholder="Enter a title for your paste">
-                    </div>
-                    <div class="form-group">
-                        <label for="content">Content *</label>
-                        <textarea id="content" placeholder="Enter your content here..." required></textarea>
-                    </div>
-                    <button type="submit">Create Paste</button>
-                </form>
-            </div>
-
-            <div class="paste-result" id="pasteResult" style="display: none;">
-                <h2>Your Paste Created Successfully!</h2>
-                <p>Share this link with others:</p>
-                <div class="link-container">
-                    <input type="text" id="pasteLink" readonly>
-                    <button id="copyLink">Copy Link</button>
-                </div>
-            </div>
-
-            <!-- Paste List Table -->
-            <div class="paste-list" id="pasteList" style="display: none;">
-                <h3>粘贴历史</h3>
-                <div class="table-container">
-                    <table class="paste-table">
-                        <thead>
-                            <tr>
-                                <th>标题</th>
-                                <th>创建时间</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pasteTableBody">
-                            <!-- Paste rows will be inserted here dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="pagination" id="pagination">
-                    <button id="prevPage" disabled>上一页</button>
-                    <span id="pageInfo">第 1 页，共 1 页</span>
-                    <button id="nextPage" disabled>下一页</button>
-                </div>
-            </div>
-
-
-        </main>
-    </div>
-
-    <script src="/static/script.js"></script>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

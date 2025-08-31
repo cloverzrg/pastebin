@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl;
+  }
+  
+  .glass-button {
+    @apply backdrop-blur-md bg-white/20 hover:bg-white/30 border border-white/30 transition-all duration-300;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent;
+  }
+  
+  .floating-card {
+    @apply transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl;
+  }
+}
