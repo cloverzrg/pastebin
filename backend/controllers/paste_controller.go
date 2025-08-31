@@ -42,11 +42,6 @@ func CreatePasteHandler(c *gin.Context) {
 	// Initialize AI fields
 	paste.AITitleGenerated = false
 	paste.AIRetryCount = 0
-	
-	// If title is provided, mark as AI generated = true to skip AI processing
-	if paste.Title != "" {
-		paste.AITitleGenerated = true
-	}
 
 	// Insert paste into database
 	err := database.CreatePaste(&paste)
