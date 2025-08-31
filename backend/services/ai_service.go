@@ -185,7 +185,7 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 		Model:       openai.ChatModel(modelConfig.Value),
 		MaxTokens:   openai.Int(int64(maxTokens)),
 		Temperature: openai.Float(temperature),
-		ReasoningEffort: openai.ReasoningEffortMinimal,
+		ReasoningEffort: openai.ReasoningEffortLow,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to call OpenAI API: %v", err)
