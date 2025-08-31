@@ -2,6 +2,7 @@ package database
 
 import (
 	"pastebin/models"
+
 	"gorm.io/gorm"
 )
 
@@ -14,20 +15,20 @@ func GetPastesForAIProcessing() ([]models.Paste, error) {
 		Order("created_at ASC").
 		Limit(10).
 		Find(&pastes).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return pastes, nil
 }
 
 // UpdatePasteAIStatus updates the AI processing status of a paste
 func UpdatePasteAIStatus(pasteID int, title string, generated bool, retryCount int) error {
 	err := DB.Model(&models.Paste{}).Where("id = ?", pasteID).Updates(map[string]interface{}{
-		"title":               title,
-		"ai_title_generated":  generated,
-		"ai_retry_count":      retryCount,
+		"title":              title,
+		"ai_title_generated": generated,
+		"ai_retry_count":     retryCount,
 	}).Error
 	return err
 }
