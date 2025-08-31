@@ -97,48 +97,60 @@ func (s *AIService) GetModels() ([]Model, error) {
 	return modelsResp.Data, nil
 }
 
-// GenerateTitle generates a title for the given content using AI
-func (s *AIService) GenerateTitle(content string) (string, error) {
+// GenerateTitleRequest represents the request format for title generation
+type GenerateTitleRequest struct {
+	Content string `json:"content"`
+	Created string `json:"created"`
+}
+
+// GenerateTitleResponse represents the response format for title generation
+type GenerateTitleResponse struct {
+	Title string `json:"title"`
+	Desc  string `json:"desc"`
+}
+
+// GenerateTitle generates a title and description for the given content using AI
+func (s *AIService) GenerateTitle(request GenerateTitleRequest) (*GenerateTitleResponse, error) {
 	// Get AI configuration
 	enabledConfig, err := database.GetConfigByKey("ai_enabled")
 	if err != nil || enabledConfig.Value != "true" {
-		return "", nil // AI is disabled, return empty title
+		return nil, nil // AI is disabled, return nil
 	}
 
 	baseURLConfig, err := database.GetConfigByKey("ai_base_url")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	apiKeyConfig, err := database.GetConfigByKey("ai_api_key")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	modelConfig, err := database.GetConfigByKey("ai_model")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	promptConfig, err := database.GetConfigByKey("ai_prompt")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	maxTokensConfig, err := database.GetConfigByKey("ai_max_tokens")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	temperatureConfig, err := database.GetConfigByKey("ai_temperature")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Parse configuration values
 	maxTokens, err := strconv.Atoi(maxTokensConfig.Value)
 	if err != nil {
-		maxTokens = 50 // default value
+		maxTokens = 100 // default value increased for JSON response
 	}
 
 	temperature, err := strconv.ParseFloat(temperatureConfig.Value, 64)
@@ -148,16 +160,13 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 
 	// Skip if API key is empty
 	if apiKeyConfig.Value == "" {
-		return "", nil
+		return nil, nil
 	}
 
-	// Prepare prompt with content
-	prompt := strings.ReplaceAll(promptConfig.Value, "{content}", content)
-
-	// Truncate content if too long (limit to 1000 characters to avoid token limits)
-	if len(content) > 1000 {
-		truncatedContent := content[:1000] + "..."
-		prompt = strings.ReplaceAll(promptConfig.Value, "{content}", truncatedContent)
+	// Prepare user input JSON
+	userInput, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %v", err)
 	}
 
 	// Create OpenAI client with custom base URL if provided
@@ -177,10 +186,11 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Make the API call
+	// Make the API call with system and user messages
 	chatCompletion, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(prompt),
+			openai.SystemMessage(promptConfig.Value),
+			openai.UserMessage(string(userInput)),
 		},
 		Model:       openai.ChatModel(modelConfig.Value),
 		MaxTokens:   openai.Int(int64(maxTokens)),
@@ -188,23 +198,30 @@ func (s *AIService) GenerateTitle(content string) (string, error) {
 		ReasoningEffort: openai.ReasoningEffortLow,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to call OpenAI API: %v", err)
+		return nil, fmt.Errorf("failed to call OpenAI API: %v", err)
 	}
 
-	// Extract title from response
+	// Extract response from AI
 	if len(chatCompletion.Choices) > 0 && chatCompletion.Choices[0].Message.Content != "" {
-		title := strings.TrimSpace(chatCompletion.Choices[0].Message.Content)
+		responseContent := strings.TrimSpace(chatCompletion.Choices[0].Message.Content)
 
-		// Remove quotes if present
-		title = strings.Trim(title, "\"'")
-
-		// Limit title length
-		if len(title) > 100 {
-			title = title[:100]
+		// Try to parse JSON response
+		var response GenerateTitleResponse
+		err := json.Unmarshal([]byte(responseContent), &response)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse AI response as JSON: %v", err)
 		}
 
-		return title, nil
+		// Limit title and description length
+		if len(response.Title) > 100 {
+			response.Title = response.Title[:100]
+		}
+		if len(response.Desc) > 200 {
+			response.Desc = response.Desc[:200]
+		}
+
+		return &response, nil
 	}
 
-	return "", fmt.Errorf("no response from AI")
+	return nil, fmt.Errorf("no response from AI")
 }

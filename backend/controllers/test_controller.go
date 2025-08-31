@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"pastebin/services"
 
@@ -26,16 +27,31 @@ func TestAIHandler(c *gin.Context) {
 	}
 
 	aiService := services.NewAIService()
-	title, err := aiService.GenerateTitle(req.Content)
+	request := services.GenerateTitleRequest{
+		Content: req.Content,
+		Created: time.Now().Format("2006-01-02 15:04"),
+	}
+	
+	response, err := aiService.GenerateTitle(request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"title":   title,
+	
+	// Prepare response data
+	responseData := gin.H{
 		"message": "AI test completed successfully",
-	})
+	}
+	
+	if response != nil {
+		responseData["title"] = response.Title
+		responseData["desc"] = response.Desc
+	} else {
+		responseData["title"] = ""
+		responseData["desc"] = ""
+	}
+
+	c.JSON(http.StatusOK, responseData)
 }
 
 // GetModelsHandler handles fetching available AI models

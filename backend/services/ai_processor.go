@@ -122,9 +122,20 @@ func (s *AIProcessorService) processPaste(paste *models.Paste) error {
 	}
 
 	// Generate title using AI
-	title, err := s.aiService.GenerateTitle(paste.Content)
+	request := GenerateTitleRequest{
+		Content: paste.Content,
+		Created: paste.CreatedAt.Format("2006-01-02 15:04"),
+	}
+	
+	response, err := s.aiService.GenerateTitle(request)
 	if err != nil {
 		return fmt.Errorf("failed to generate title: %v", err)
+	}
+	
+	// Use the generated title, fallback to original title if AI returns nil
+	title := paste.Title
+	if response != nil && response.Title != "" {
+		title = response.Title
 	}
 
 	// Update paste with generated title
